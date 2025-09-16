@@ -90,10 +90,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-900 text-white antialiased overflow-hidden h-full flex flex-col p-4">
+<body class="bg-gray-900 text-white antialiased overflow-hidden h-full flex flex-col">
 
     <!-- Main Chart Section -->
-    <main class="bg-gray-800 rounded-lg shadow-2xl flex flex-col flex-grow min-h-0">
+    <main class="bg-gray-800 rounded-lg shadow-2xl flex flex-col flex-grow min-h-0 m-4">
         <!-- Chart Header: Tabs, Indicators, and Timeframe Dropdown -->
         <div class="flex justify-between items-center p-2 border-b border-gray-700 flex-shrink-0">
             <!-- Left side: Tabs and Indicators -->
