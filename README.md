@@ -22,9 +22,20 @@
         ::-webkit-scrollbar-thumb:hover { background: #64748b; }
         
         /* Tab styles */
-        .tab-btn { background-color: transparent; border-bottom: 2px solid transparent; transition: all 0.2s ease-in-out; color: #9ca3af; }
-        .tab-btn:hover { color: #ffffff; }
-        .tab-btn.active { color: white; border-bottom-color: #3b82f6; }
+        .tab-btn { 
+            background-color: #374151; /* bg-gray-700 */
+            transition: all 0.2s ease-in-out; 
+            color: #d1d5db;
+            border-radius: 0.375rem; /* rounded-md */
+        }
+        .tab-btn:hover { 
+            background-color: #4B5563; /* bg-gray-600 */
+            color: #ffffff; 
+        }
+        .tab-btn.active { 
+            background-color: #2563EB; /* bg-blue-600 */
+            color: white; 
+        }
         
         /* Active coin in sidebar */
         .coin-item.active { background-color: #3b82f6; }
@@ -37,11 +48,12 @@
         .gutter.gutter-vertical { cursor: row-resize; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo7865AAAABlBMVEVHcEzMzMzyAv2sAAAAAXRSTlMAQObYZgAAABBJREFUeF5jOAMEEAIEEFwAn3kMwcB6I2AAAAAASUVORK5CYII='); }
         
         /* Styles for chart grid */
-        .chart-grid-container { width: 100%; height: 100%; } /* Removed display:grid */
+        .chart-grid-container { width: 100%; height: 100%; }
         .chart-pane { position: relative; overflow: hidden; border: 2px solid transparent; transition: border-color 0.2s; }
         .chart-pane.active { border-color: #3b82f6; }
         .chart-pane.replay-active { cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>') 12 12, auto; }
-        
+        .chart-pane.drawing-cursor .tv-lightweight-charts { cursor: crosshair !important; }
+
         /* Custom style for color input */
         input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
         input[type="color"]::-webkit-color-swatch { border: none; border-radius: 4px; }
@@ -60,43 +72,64 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Drawing Toolbar Styles */
+        #drawing-toolbar {
+            transition: transform 0.3s ease-in-out;
+        }
+        #drawing-toolbar.hidden {
+            transform: translateX(-100%);
+        }
+        .drawing-tool-btn.active {
+            background-color: #2563eb;
+            color: white;
+        }
     </style>
     <!-- Google Fonts for a nice typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-900 text-white antialiased overflow-x-hidden">
+<body class="bg-gray-900 text-white antialiased overflow-x-hidden flex flex-col h-screen">
 
-    <div class="container mx-auto p-4 max-w-7xl">
+    <div class="container mx-auto p-4 max-w-7xl flex flex-col flex-grow">
         <!-- Header Section -->
         <header class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
             <div class="flex-grow">
                  <!-- This space can be used for a logo or symbol search in the future -->
             </div>
-            <div class="flex-grow flex justify-end">
-                <button id="sidebar-toggle" class="p-2 rounded-md hover:bg-gray-700 transition-colors z-30" title="İzleme Listesini Aç">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                </button>
-            </div>
         </header>
 
         <!-- Main Chart Section -->
-        <main class="bg-gray-800 rounded-lg shadow-2xl p-2">
+        <main class="bg-gray-800 rounded-lg shadow-2xl flex flex-col flex-grow min-h-[500px]">
             <!-- Chart Header: Tabs, Indicators, and Timeframe Dropdown -->
             <div class="flex justify-between items-center p-2 border-b border-gray-700">
                 <!-- Left side: Tabs and Indicators -->
                 <div class="flex items-center space-x-2">
-                     <div class="flex">
-                        <button id="chart-tab" class="tab-btn active px-4 py-2 text-sm font-medium">Grafik</button>
-                        <button id="pine-tab" class="tab-btn px-4 py-2 text-sm font-medium">PineEdit</button>
+                     <div class="flex space-x-2">
+                        <button id="chart-tab" class="tab-btn active px-3 py-1 text-sm font-medium">Grafik</button>
+                        <button id="pine-tab" class="tab-btn px-3 py-1 text-sm font-medium">Kodyaz</button>
                     </div>
+
+                    <div class="relative" id="timeframe-dropdown">
+                        <button id="timeframe-toggle" class="flex items-center space-x-2 px-3 py-1 text-sm rounded-md bg-gray-700 hover:bg-gray-600 transition-colors">
+                            <span id="current-timeframe-label" class="font-semibold">1h</span>
+                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <div id="timeframe-menu" class="absolute left-0 mt-2 w-36 bg-gray-700 rounded-md shadow-lg z-20 hidden">
+                            <a href="#" data-interval="1m" class="timeframe-item block px-4 py-2 text-sm text-white hover:bg-blue-600 rounded-t-md">1 Dakika</a>
+                            <a href="#" data-interval="5m" class="timeframe-item block px-4 py-2 text-sm text-white hover:bg-blue-600">5 Dakika</a>
+                            <a href="#" data-interval="15m" class="timeframe-item block px-4 py-2 text-sm text-white hover:bg-blue-600">15 Dakika</a>
+                            <a href="#" data-interval="1h" class="timeframe-item block px-4 py-2 text-sm text-white hover:bg-blue-600">1 Saat</a>
+                            <a href="#" data-interval="4h" class="timeframe-item block px-4 py-2 text-sm text-white hover:bg-blue-600">4 Saat</a>
+                            <a href="#" data-interval="1d" class="timeframe-item block px-4 py-2 text-sm text-white hover:bg-blue-600 rounded-b-md">1 Gün</a>
+                        </div>
+                    </div>
+
                      <!-- Layout Dropdown -->
                     <div class="relative" id="layout-dropdown">
-                        <button id="layout-toggle" class="p-2 text-sm rounded-md bg-gray-700 hover:bg-gray-600 transition-colors">
-                            <svg class="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 3H3v18h18V3zM9 13H5v-4h4v4zm5.5 0h-4v-4h4v4zm5.5 0h-4v-4h4v4z" fill="currentColor"></path></svg>
+                        <button id="layout-toggle" class="px-3 py-1 text-sm rounded-md bg-gray-700 hover:bg-gray-600 transition-colors">
+                            <span class="font-semibold">Bölme</span>
                         </button>
                         <div id="layout-menu" class="absolute left-0 mt-2 p-2 w-48 bg-gray-700 rounded-md shadow-lg z-20 hidden">
                             <div class="flex flex-col space-y-1">
@@ -130,9 +163,8 @@
 
                     <!-- Indicators Dropdown -->
                     <div class="relative" id="indicators-dropdown">
-                        <button id="indicators-toggle" class="flex items-center space-x-2 px-3 py-1 text-sm rounded-md bg-gray-700 hover:bg-gray-600 transition-colors">
-                            <svg class="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" /><path d="M12 2.252A8.014 8.014 0 0117.748 12H12V2.252z" /></svg>
-                            <span class="font-semibold">Göstergeler</span>
+                        <button id="indicators-toggle" class="px-3 py-1 text-sm rounded-md bg-gray-700 hover:bg-gray-600 transition-colors">
+                            <span class="font-semibold">Gösterge</span>
                         </button>
                         <div id="indicators-menu" class="absolute left-0 mt-2 w-56 bg-gray-700 rounded-md shadow-lg z-20 hidden">
                             <!-- Menu content generated by JS -->
@@ -146,7 +178,7 @@
                     </button>
                 </div>
                 
-                <!-- Right side: Settings & Timeframe Dropdown -->
+                <!-- Right side: Settings -->
                 <div class="flex items-center space-x-2">
                      <!-- Settings Dropdown -->
                     <div class="relative" id="settings-dropdown">
@@ -158,33 +190,54 @@
                         <div id="settings-menu" class="absolute right-0 mt-2 p-3 w-56 bg-gray-700 rounded-md shadow-lg z-20 hidden">
                             <div class="flex items-center justify-between">
                                 <label for="background-color-picker" class="text-sm text-white">Grafik Arka Plan</label>
-                                <input type="color" id="background-color-picker" value="#1f2937" class="w-8 h-8 p-0 border-none rounded cursor-pointer bg-transparent">
+                                <div class="flex items-center space-x-2">
+                                    <input type="color" id="background-color-picker" value="#1f2937" class="w-8 h-8 p-0 border-none rounded cursor-pointer bg-transparent">
+                                    <button id="save-color-btn" title="Rengi Kaydet" class="p-1.5 text-gray-400 hover:text-white hover:bg-gray-600 rounded-md transition-colors">
+                                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v12l-5-3-5 3V4z" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-
-                    <div class="relative" id="timeframe-dropdown">
-                        <button id="timeframe-toggle" class="flex items-center space-x-2 px-3 py-1 text-sm rounded-md bg-gray-700 hover:bg-gray-600 transition-colors">
-                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            <span id="current-timeframe-label" class="font-semibold">1h</span>
-                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                        </button>
-                        <div id="timeframe-menu" class="absolute right-0 mt-2 w-36 bg-gray-700 rounded-md shadow-lg z-20 hidden">
-                            <a href="#" data-interval="1m" class="timeframe-item block px-4 py-2 text-sm text-white hover:bg-blue-600 rounded-t-md">1 Dakika</a>
-                            <a href="#" data-interval="5m" class="timeframe-item block px-4 py-2 text-sm text-white hover:bg-blue-600">5 Dakika</a>
-                            <a href="#" data-interval="15m" class="timeframe-item block px-4 py-2 text-sm text-white hover:bg-blue-600">15 Dakika</a>
-                            <a href="#" data-interval="1h" class="timeframe-item block px-4 py-2 text-sm text-white hover:bg-blue-600">1 Saat</a>
-                            <a href="#" data-interval="4h" class="timeframe-item block px-4 py-2 text-sm text-white hover:bg-blue-600">4 Saat</a>
-                            <a href="#" data-interval="1d" class="timeframe-item block px-4 py-2 text-sm text-white hover:bg-blue-600 rounded-b-md">1 Gün</a>
-                        </div>
-                    </div>
+                     <button id="sidebar-toggle" class="p-2 rounded-md bg-gray-700 hover:bg-gray-600 transition-colors" title="İzleme Listesini Aç">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+                        </svg>
+                    </button>
                 </div>
             </div>
 
             <!-- Tab Content -->
-            <div id="tab-content-wrapper">
+            <div id="tab-content-wrapper" class="flex-grow relative">
                 <!-- Chart Panel -->
-                <div id="chart-panel" class="w-full h-[60vh] min-h-[500px] relative">
+                <div id="chart-panel" class="w-full h-full relative">
+                    <!-- Drawing Toolbar -->
+                    <div id="drawing-toolbar-container" class="absolute top-0 left-0 h-full z-20 flex items-center">
+                        <div id="drawing-toolbar" class="bg-gray-900/50 backdrop-blur-sm p-1.5 rounded-r-lg flex flex-col items-center space-y-2 hidden">
+                            <button data-tool="cursor" class="drawing-tool-btn active p-2 rounded-md hover:bg-gray-700 transition-colors" title="İmleç">
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 4l11 4-5 2zm0 0l5 5M7.188 8.812l5.938 2.375" /></svg>
+                            </button>
+                            <button data-tool="trendline" class="drawing-tool-btn p-2 rounded-md hover:bg-gray-700 transition-colors" title="Trend Çizgisi">
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="5"></line></svg>
+                            </button>
+                             <button data-tool="fib" class="drawing-tool-btn p-2 rounded-md hover:bg-gray-700 transition-colors" title="Fibonacci Düzeltmesi">
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M21 12H3"/><path d="M21 8H3"/><path d="M21 16H3"/></svg>
+                            </button>
+                            <button data-tool="rectangle" class="drawing-tool-btn p-2 rounded-md hover:bg-gray-700 transition-colors" title="Dikdörtgen">
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+                            </button>
+                             <div class="border-t border-gray-700 w-full my-1"></div>
+                            <button data-tool="clear" class="p-2 rounded-md hover:bg-gray-700 text-red-500 hover:text-red-400 transition-colors" title="Tüm Çizimleri Sil">
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                            </button>
+                        </div>
+                         <button id="drawing-toolbar-toggle" class="bg-gray-900/50 hover:bg-gray-700/80 p-1 rounded-r-lg transition-colors">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                        </button>
+                    </div>
+
                     <div id="chart-grid-container" class="w-full h-full">
                          <!-- Chart panes will be injected here by JS -->
                     </div>
@@ -211,7 +264,7 @@
                     </div>
                 </div>
                  <!-- Pine Script Editor Panel -->
-                <div id="pine-panel" class="hidden h-[60vh] min-h-[500px] flex-col">
+                <div id="pine-panel" class="hidden h-full flex flex-col">
                     <div class="p-2 bg-gray-900/50 rounded-t-md border-b border-gray-700">
                         <div class="flex items-center space-x-2">
                              <input type="text" id="script-prompt-input" class="flex-grow bg-gray-700 text-white p-2 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Örn: 50 ve 100 günlük hareketli ortalamaları çizdir">
@@ -248,7 +301,7 @@
         <div class="p-2 border-t border-gray-700">
             <button id="add-coin-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
                  <svg class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                Yeni Varlık Ekle
+                Ekle
             </button>
         </div>
     </aside>
@@ -306,6 +359,7 @@
             const settingsToggle = document.getElementById('settings-toggle');
             const settingsMenu = document.getElementById('settings-menu');
             const backgroundColorPicker = document.getElementById('background-color-picker');
+            const saveColorBtn = document.getElementById('save-color-btn');
             const replayBtn = document.getElementById('replay-btn');
             const replayBtnText = document.getElementById('replay-btn-text');
             const replayControls = document.getElementById('replay-controls');
@@ -315,16 +369,18 @@
             const replayForwardBtn = document.getElementById('replay-forward');
             const replaySpeedSelect = document.getElementById('replay-speed');
             const replayExitBtn = document.getElementById('replay-exit');
+            const drawingToolbar = document.getElementById('drawing-toolbar');
+            const drawingToolbarToggle = document.getElementById('drawing-toolbar-toggle');
 
 
             // --- Global State ---
             let chartInstances = [];
             let activeChartId = null;
             let splitInstance = null;
-            let watchlistSocket;
             let watchlistSymbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT', 'ADAUSDT'];
             let lastPrices = {};
             let customScripts = {};
+            let currentBackgroundColor = '#1f2937';
 
             // Replay Mode State
             let isReplayModeActive = false;
@@ -337,6 +393,16 @@
                 timer: null,
                 speed: 1000,
             };
+
+            // Drawing State
+            let activeDrawingTool = 'cursor';
+            let isDrawing = false;
+            let drawingStartPoint = null;
+
+            // --- WebSocket Management (Centralized) ---
+            let mainSocket = null;
+            let activeStreams = new Set();
+            let subscriptionIdCounter = 1;
 
             const defaultScript = 
 `/**
@@ -412,11 +478,23 @@ return result;
                 const chart = LightweightCharts.createChart(container, {
                     width: container.clientWidth,
                     height: container.clientHeight,
-                    layout: { backgroundColor: '#1f2937', textColor: 'rgba(255, 255, 255, 0.9)' },
-                    grid: { vertLines: { color: '#374151' }, horzLines: { color: '#374151' } },
+                    layout: { 
+                        backgroundColor: currentBackgroundColor, 
+                        textColor: 'rgba(229, 231, 235, 1)' 
+                    },
+                    grid: { 
+                        vertLines: { visible: false }, 
+                        horzLines: { visible: false } 
+                    },
                     crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-                    rightPriceScale: { borderColor: '#4b5563' },
-                    timeScale: { borderColor: '#4b5563', timeVisible: true, secondsVisible: false },
+                    rightPriceScale: { 
+                        borderColor: '#4b5563',
+                    },
+                    timeScale: { 
+                        borderColor: '#4b5563', 
+                        timeVisible: true, 
+                        secondsVisible: false,
+                    },
                 });
 
                 const candlestickSeries = chart.addCandlestickSeries({
@@ -434,20 +512,25 @@ return result;
                     interval: initialState.interval,
                     historicalData: [],
                     activeIndicators: {},
-                    socket: null,
+                    drawings: [],
                 };
                 
                 fetchHistoricalData(instance);
-                setupChartWebSocket(instance);
 
                 container.parentElement.addEventListener('click', () => {
-                     if (isReplayModeActive && !replayState.instance) return; // Prevent switching active chart before replay cut
+                     if (isReplayModeActive && !replayState.instance) return;
+                     if (isDrawing) return;
                     setActiveChart(id)
                 });
                  
                 chart.subscribeClick(param => {
                      if (isReplayModeActive && replayState.instance?.id === id) {
                         handleReplayCut(param.time);
+                        return;
+                    }
+
+                    if (activeDrawingTool !== 'cursor' && instance.id === activeChartId) {
+                        handleDrawing(param, instance);
                     }
                 });
                 
@@ -459,8 +542,10 @@ return result;
                     splitInstance.destroy();
                     splitInstance = null;
                 }
+                const streamsToUnsub = chartInstances.map(inst => `${inst.symbol.toLowerCase()}@kline_${inst.interval}`);
+                unsubscribeFromStreams(streamsToUnsub);
+
                 chartInstances.forEach(instance => {
-                    if (instance.socket) instance.socket.close();
                     if (instance.chart) instance.chart.remove();
                 });
                 chartInstances = [];
@@ -470,15 +555,23 @@ return result;
             function applyLayout(layoutType) {
                 destroyAllCharts();
                 
-                // FIX: Reset container styles before applying new layout
-                chartGridContainer.style.display = '';
-                chartGridContainer.style.gridTemplateColumns = '';
-                chartGridContainer.style.gridTemplateRows = '';
+                chartGridContainer.removeAttribute('style');
                 
                 const getInitialState = (index) => ({
                     symbol: watchlistSymbols[index] || 'BTCUSDT',
                     interval: '1h',
                 });
+                
+                const splitOptions = {
+                    minSize: 100,
+                    onDrag: () => {
+                        chartInstances.forEach(instance => {
+                            if (instance.chart) {
+                                instance.chart.resize(instance.container.clientWidth, instance.container.clientHeight);
+                            }
+                        });
+                    }
+                };
 
                 if (layoutType === '1x1') {
                     chartGridContainer.style.display = 'grid';
@@ -488,27 +581,35 @@ return result;
                     chartGridContainer.appendChild(pane);
                     chartInstances.push(createChartInstance(pane, 0, getInitialState(0)));
                 } else if (layoutType === '2x1v') {
+                    chartGridContainer.style.display = 'flex';
+                    chartGridContainer.style.flexDirection = 'row';
                     chartGridContainer.innerHTML = '<div id="pane-0" class="chart-pane"></div><div id="pane-1" class="chart-pane"></div>';
                     chartInstances.push(createChartInstance(document.getElementById('pane-0'), 0, getInitialState(0)));
                     chartInstances.push(createChartInstance(document.getElementById('pane-1'), 1, getInitialState(1)));
-                    splitInstance = Split(['#pane-0', '#pane-1'], { direction: 'horizontal', sizes: [50, 50], minSize: 100 });
+                    splitInstance = Split(['#pane-0', '#pane-1'], { ...splitOptions, direction: 'horizontal', sizes: [50, 50] });
                 } else if (layoutType === '2x1h') {
+                    chartGridContainer.style.display = 'flex';
+                    chartGridContainer.style.flexDirection = 'column';
                     chartGridContainer.innerHTML = '<div id="pane-0" class="chart-pane"></div><div id="pane-1" class="chart-pane"></div>';
                     chartInstances.push(createChartInstance(document.getElementById('pane-0'), 0, getInitialState(0)));
                     chartInstances.push(createChartInstance(document.getElementById('pane-1'), 1, getInitialState(1)));
-                    splitInstance = Split(['#pane-0', '#pane-1'], { direction: 'vertical', sizes: [50, 50], minSize: 100 });
+                    splitInstance = Split(['#pane-0', '#pane-1'], { ...splitOptions, direction: 'vertical', sizes: [50, 50] });
                 } else if (layoutType === '3x1v') {
+                    chartGridContainer.style.display = 'flex';
+                     chartGridContainer.style.flexDirection = 'row';
                     chartGridContainer.innerHTML = '<div id="pane-0" class="chart-pane"></div><div id="pane-1" class="chart-pane"></div><div id="pane-2" class="chart-pane"></div>';
                     for(let i=0; i<3; i++) {
                         chartInstances.push(createChartInstance(document.getElementById(`pane-${i}`), i, getInitialState(i)));
                     }
-                    splitInstance = Split(['#pane-0', '#pane-1', '#pane-2'], { direction: 'horizontal', sizes: [33.3, 33.3, 33.4], minSize: 100 });
+                    splitInstance = Split(['#pane-0', '#pane-1', '#pane-2'], { ...splitOptions, direction: 'horizontal', sizes: [33.3, 33.3, 33.4] });
                 } else if (layoutType === '3x1h') {
+                    chartGridContainer.style.display = 'flex';
+                    chartGridContainer.style.flexDirection = 'column';
                     chartGridContainer.innerHTML = '<div id="pane-0" class="chart-pane"></div><div id="pane-1" class="chart-pane"></div><div id="pane-2" class="chart-pane"></div>';
                      for(let i=0; i<3; i++) {
                         chartInstances.push(createChartInstance(document.getElementById(`pane-${i}`), i, getInitialState(i)));
                     }
-                    splitInstance = Split(['#pane-0', '#pane-1', '#pane-2'], { direction: 'vertical', sizes: [33.3, 33.3, 33.4], minSize: 100 });
+                    splitInstance = Split(['#pane-0', '#pane-1', '#pane-2'], { ...splitOptions, direction: 'vertical', sizes: [33.3, 33.3, 33.4] });
                 } else if (layoutType === '2x2') {
                     chartGridContainer.style.display = 'grid';
                     chartGridContainer.style.gridTemplateColumns = '1fr 1fr';
@@ -553,15 +654,56 @@ return result;
                 loadingIndicator.style.display = 'flex';
                 removeAllIndicators(instance);
                 try {
-                    const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${instance.symbol}&interval=${instance.interval}&limit=1000`);
-                    if (!response.ok) throw new Error(`Network response was not ok for ${instance.symbol}`);
-                    const data = await response.json();
-                    const formattedData = data.map(d => ({
-                        time: d[0] / 1000, open: parseFloat(d[1]), high: parseFloat(d[2]),
-                        low: parseFloat(d[3]), close: parseFloat(d[4]),
+                    const fiveYearsAgo = new Date();
+                    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+                    const targetStartTime = fiveYearsAgo.getTime();
+
+                    let allKlines = [];
+                    let endTime = null;
+                    let limit = 1000;
+                    let safetyBreak = 15; 
+
+                    while (safetyBreak > 0) {
+                        let url = `https://api.binance.com/api/v3/klines?symbol=${instance.symbol}&interval=${instance.interval}&limit=${limit}`;
+                        if (endTime) {
+                            url += `&endTime=${endTime}`;
+                        }
+
+                        const response = await fetch(url);
+                        if (!response.ok) throw new Error(`Network response was not ok for ${instance.symbol}`);
+                        
+                        const klines = await response.json();
+                        if (klines.length === 0) {
+                            break; 
+                        }
+
+                        allKlines.unshift(...klines);
+                        const firstKlineTime = klines[0][0];
+
+                        if (firstKlineTime <= targetStartTime) {
+                            break; 
+                        }
+
+                        endTime = firstKlineTime - 1;
+                        safetyBreak--;
+                    }
+
+                    if(allKlines.length === 0){
+                         throw new Error("API'den hiç veri alınamadı.");
+                    }
+
+                    const formattedData = allKlines.map(d => ({
+                        time: d[0] / 1000,
+                        open: parseFloat(d[1]),
+                        high: parseFloat(d[2]),
+                        low: parseFloat(d[3]),
+                        close: parseFloat(d[4]),
                     }));
+                    
                     instance.historicalData = formattedData;
                     instance.candlestickSeries.setData(formattedData);
+                    subscribeToStreams([`${instance.symbol.toLowerCase()}@kline_${instance.interval}`]);
+
                 } catch (error) {
                     console.error('Failed to fetch historical data:', error);
                     instance.container.innerHTML = `<p class="text-red-500 p-4">${instance.symbol} için veri yüklenemedi.</p>`;
@@ -571,37 +713,86 @@ return result;
                 }
             }
 
-            function setupChartWebSocket(instance) {
-                if (instance.socket) instance.socket.close();
-                const socketUrl = `wss://stream.binance.com/ws/${instance.symbol.toLowerCase()}@kline_${instance.interval}`;
-                instance.socket = new WebSocket(socketUrl);
-                instance.socket.onmessage = (event) => {
-                    const message = JSON.parse(event.data);
-                    const candle = message.k;
-                    const formattedCandle = {
-                        time: candle.t / 1000, open: parseFloat(candle.o), high: parseFloat(candle.h),
-                        low: parseFloat(candle.l), close: parseFloat(candle.c),
-                    };
-                    if (instance.candlestickSeries) instance.candlestickSeries.update(formattedCandle);
-                };
-                instance.socket.onerror = (error) => console.error(`Chart WebSocket Error for ${instance.symbol}:`, error);
-            }
+            function connectMainWebSocket() {
+                if (mainSocket && mainSocket.readyState < 2) { return; }
+                
+                const socketUrl = `wss://stream.binance.com:9443/stream`;
+                mainSocket = new WebSocket(socketUrl);
 
-            function setupWatchlistWebSocket() {
-                if (watchlistSocket) watchlistSocket.close();
-                const socketUrl = `wss://stream.binance.com/ws`;
-                watchlistSocket = new WebSocket(socketUrl);
-                watchlistSocket.onopen = () => {
-                    const params = watchlistSymbols.map(s => `${s.toLowerCase()}@ticker`);
-                    watchlistSocket.send(JSON.stringify({ method: "SUBSCRIBE", params: params, id: 1 }));
-                };
-                watchlistSocket.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    if (data.e === '24hrTicker') {
-                        updateWatchlistPrice(data.s, parseFloat(data.c));
+                mainSocket.onopen = () => {
+                    console.log("Main WebSocket connection opened.");
+                    if (activeStreams.size > 0) {
+                        mainSocket.send(JSON.stringify({
+                            method: "SUBSCRIBE",
+                            params: Array.from(activeStreams),
+                            id: subscriptionIdCounter++
+                        }));
                     }
                 };
-                watchlistSocket.onerror = (error) => console.error('Watchlist WebSocket Error:', error);
+
+                mainSocket.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    if (message.result === null && message.id) { return; }
+                    if (!message.stream || !message.data) { return; }
+
+                    const stream = message.stream;
+                    const data = message.data;
+
+                    if (stream.endsWith('@ticker')) {
+                        updateWatchlistPrice(data.s, parseFloat(data.c));
+                    } else if (stream.includes('@kline')) {
+                        const symbol = data.s;
+                        const interval = data.k.i;
+                        const instance = chartInstances.find(inst => inst.symbol === symbol && inst.interval === interval);
+                        if (instance) {
+                            const candle = data.k;
+                            const formattedCandle = {
+                                time: candle.t / 1000,
+                                open: parseFloat(candle.o),
+                                high: parseFloat(candle.h),
+                                low: parseFloat(candle.l),
+                                close: parseFloat(candle.c),
+                            };
+                            if (instance.candlestickSeries) instance.candlestickSeries.update(formattedCandle);
+                        }
+                    }
+                };
+
+                mainSocket.onerror = (error) => { console.error("Main WebSocket Error:", error); };
+                mainSocket.onclose = () => {
+                    console.log("Main WebSocket closed. Reconnecting...");
+                    setTimeout(connectMainWebSocket, 5000);
+                };
+            }
+
+            function subscribeToStreams(streams) {
+                connectMainWebSocket();
+                const newStreams = streams.filter(s => !activeStreams.has(s));
+                if (newStreams.length === 0) return;
+
+                newStreams.forEach(s => activeStreams.add(s));
+                if (mainSocket && mainSocket.readyState === WebSocket.OPEN) {
+                    mainSocket.send(JSON.stringify({
+                        method: "SUBSCRIBE",
+                        params: newStreams,
+                        id: subscriptionIdCounter++
+                    }));
+                }
+            }
+
+            function unsubscribeFromStreams(streams) {
+                const streamsToUnsub = streams.filter(s => activeStreams.has(s));
+                if (streamsToUnsub.length === 0) return;
+                
+                streamsToUnsub.forEach(s => activeStreams.delete(s));
+
+                if (mainSocket && mainSocket.readyState === WebSocket.OPEN) {
+                     mainSocket.send(JSON.stringify({
+                        method: "UNSUBSCRIBE",
+                        params: streamsToUnsub,
+                        id: subscriptionIdCounter++
+                    }));
+                }
             }
             
             // --- Indicator & Scripting Logic ---
@@ -651,8 +842,8 @@ return result;
                     const scriptFunction = new Function('data', scriptCode);
                     const indicatorData = scriptFunction(instance.historicalData);
 
-                    if (!Array.isArray(indicatorData) || indicatorData.length === 0) {
-                         throw new Error("Komut dosyası geçerli bir dizi döndürmedi.");
+                    if (!Array.isArray(indicatorData) || (indicatorData.length > 0 && (indicatorData[0].time === undefined || indicatorData[0].value === undefined))) {
+                         throw new Error("Komut dosyası geçerli bir {time, value} dizisi döndürmedi.");
                     }
 
                     const scriptSeries = instance.chart.addLineSeries({
@@ -689,13 +880,13 @@ return result;
                 }
 
                 if (isReplayModeActive) {
+                    setActiveDrawingTool('cursor');
                     replayState.instance = activeInstance;
                     replayState.fullData = [...activeInstance.historicalData];
                     replayBtnText.textContent = "Kesmek için Tıkla";
                     replayBtn.classList.add('bg-blue-600', 'text-white');
                     activeInstance.container.parentElement.classList.add('replay-active');
-                    // Disable other controls
-                    document.querySelectorAll('#layout-toggle, #indicators-toggle, #timeframe-toggle, #settings-toggle').forEach(el => el.disabled = true);
+                    document.querySelectorAll('#layout-toggle, #indicators-toggle, #timeframe-toggle, #settings-toggle, #drawing-toolbar button').forEach(el => el.disabled = true);
                 } else {
                     exitReplayMode();
                 }
@@ -705,14 +896,28 @@ return result;
                 if (!isReplayModeActive || !replayState.instance || replayState.futureData.length > 0) return;
                 
                 const cutIndex = replayState.fullData.findIndex(d => d.time >= time);
-                if (cutIndex <= 0) return;
+                if (cutIndex <= 1) return; 
 
                 const pastData = replayState.fullData.slice(0, cutIndex);
                 replayState.futureData = replayState.fullData.slice(cutIndex);
                 replayState.currentIndex = 0;
                 
                 replayState.instance.candlestickSeries.setData(pastData);
-                if (replayState.instance.socket) replayState.instance.socket.close();
+                
+                const lastVisibleCandle = pastData[pastData.length - 1];
+                if (lastVisibleCandle) {
+                    const marker = {
+                        time: lastVisibleCandle.time,
+                        position: 'aboveBar',
+                        color: '#3b82f6',
+                        shape: 'arrowDown',
+                        text: 'Başlangıç'
+                    };
+                    replayState.instance.candlestickSeries.setMarkers([marker]);
+                }
+                
+                unsubscribeFromStreams([`${replayState.instance.symbol.toLowerCase()}@kline_${replayState.instance.interval}`]);
+
 
                 replayState.instance.container.parentElement.classList.remove('replay-active');
                 replayControls.classList.remove('hidden');
@@ -721,7 +926,7 @@ return result;
 
             function stepReplayForward() {
                 if (replayState.currentIndex >= replayState.futureData.length) {
-                    pauseReplay(); // End of data
+                    pauseReplay(); 
                     return;
                 }
                 const nextCandle = replayState.futureData[replayState.currentIndex];
@@ -751,28 +956,140 @@ return result;
 
                 if (replayState.instance) {
                     replayState.instance.candlestickSeries.setData(replayState.fullData);
-                    setupChartWebSocket(replayState.instance); // Reconnect
+                    replayState.instance.candlestickSeries.setMarkers([]);
+                    subscribeToStreams([`${replayState.instance.symbol.toLowerCase()}@kline_${replayState.instance.interval}`]);
                     replayState.instance.container.parentElement.classList.remove('replay-active');
                 }
                 
-                // Reset state
                 isReplayModeActive = false;
                 replayState = { instance: null, fullData: [], futureData: [], currentIndex: 0, isPlaying: false, timer: null, speed: 1000 };
                 
-                // UI cleanup
                 replayControls.classList.add('hidden');
                 replayBtnText.textContent = "Tekrar";
                 replayBtn.classList.remove('bg-blue-600', 'text-white');
                 pauseIcon.classList.add('hidden');
                 playIcon.classList.remove('hidden');
 
-                // Re-enable controls
-                document.querySelectorAll('#layout-toggle, #indicators-toggle, #timeframe-toggle, #settings-toggle').forEach(el => el.disabled = false);
+                document.querySelectorAll('#layout-toggle, #indicators-toggle, #timeframe-toggle, #settings-toggle, #drawing-toolbar button').forEach(el => el.disabled = false);
             }
+            
+             // --- Drawing Logic ---
+
+            function setActiveDrawingTool(tool) {
+                if (isReplayModeActive) return;
+
+                activeDrawingTool = tool;
+                document.querySelectorAll('.drawing-tool-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.tool === tool);
+                });
+                 document.querySelectorAll('.chart-pane').forEach(pane => {
+                    pane.classList.toggle('drawing-cursor', tool !== 'cursor');
+                });
+
+                isDrawing = false;
+                drawingStartPoint = null;
+            }
+
+            function handleDrawing(param, instance) {
+                if (!param.point || !param.time) return;
+
+                const price = instance.candlestickSeries.coordinateToPrice(param.point.y);
+                if (!price) return;
+                
+                if (!isDrawing) {
+                    isDrawing = true;
+                    drawingStartPoint = { time: param.time, price: price };
+                } else {
+                    const endPoint = { time: param.time, price: price };
+
+                    if (activeDrawingTool === 'trendline') {
+                        const line = instance.chart.addLineSeries({ color: '#2563eb', lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+                        line.setData([
+                            { time: drawingStartPoint.time, value: drawingStartPoint.price },
+                            { time: endPoint.time, value: endPoint.price }
+                        ]);
+                        instance.drawings.push({ type: 'series', obj: line });
+                    }
+                    else if (activeDrawingTool === 'fib') {
+                        drawFibRetracement(instance, drawingStartPoint, endPoint);
+                    }
+                    else if (activeDrawingTool === 'rectangle') {
+                        drawRectangle(instance, drawingStartPoint, endPoint);
+                    }
+                    
+                    isDrawing = false;
+                    drawingStartPoint = null;
+                    setActiveDrawingTool('cursor');
+                }
+            }
+            
+            function drawRectangle(instance, start, end) {
+                const commonOptions = { 
+                    color: 'rgba(59, 130, 246, 0.7)', 
+                    lineWidth: 1, 
+                    priceLineVisible: false, 
+                    lastValueVisible: false, 
+                    crosshairMarkerVisible: false 
+                };
+
+                const time1 = Math.min(start.time, end.time);
+                const time2 = Math.max(start.time, end.time);
+                const price1 = start.price;
+                const price2 = end.price;
+
+                const topLine = instance.chart.addLineSeries(commonOptions);
+                const bottomLine = instance.chart.addLineSeries(commonOptions);
+                const leftLine = instance.chart.addLineSeries(commonOptions);
+                const rightLine = instance.chart.addLineSeries(commonOptions);
+
+                topLine.setData([{ time: time1, value: price1 }, { time: time2, value: price1 }]);
+                bottomLine.setData([{ time: time1, value: price2 }, { time: time2, value: price2 }]);
+                leftLine.setData([{ time: time1, value: price1 }, { time: time1, value: price2 }]);
+                rightLine.setData([{ time: time2, value: price1 }, { time: time2, value: price2 }]);
+                
+                instance.drawings.push({ type: 'series', obj: topLine });
+                instance.drawings.push({ type: 'series', obj: bottomLine });
+                instance.drawings.push({ type: 'series', obj: leftLine });
+                instance.drawings.push({ type: 'series', obj: rightLine });
+            }
+
+            function drawFibRetracement(instance, start, end) {
+                const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+                const priceDiff = end.price - start.price;
+
+                levels.forEach(level => {
+                    const price = start.price + priceDiff * level;
+                    const color = level === 0.5 ? 'rgba(255, 165, 0, 0.7)' : 'rgba(59, 130, 246, 0.7)';
+                    const priceLine = instance.chart.createPriceLine({
+                        price: price,
+                        color: color,
+                        lineWidth: 1,
+                        lineStyle: LightweightCharts.LineStyle.Dashed,
+                        axisLabelVisible: true,
+                        title: level.toFixed(3),
+                    });
+                    instance.drawings.push({ type: 'priceLine', obj: priceLine });
+                });
+            }
+             
+            function clearAllDrawings() {
+                const instance = chartInstances.find(inst => inst.id === activeChartId);
+                if (!instance) return;
+
+                instance.drawings.forEach(drawing => {
+                    if (drawing.type === 'series') {
+                        instance.chart.removeSeries(drawing.obj);
+                    } else if (drawing.type === 'priceLine') {
+                        instance.chart.removePriceLine(drawing.obj);
+                    }
+                });
+                instance.drawings = [];
+            }
+
 
             // --- UI Updates ---
             function renderIndicatorsMenu() {
-                indicatorsMenu.innerHTML = ''; // Clear existing
+                indicatorsMenu.innerHTML = '';
                 
                 const builtInHeader = document.createElement('div');
                 builtInHeader.className = 'px-4 py-2 text-xs font-bold text-gray-400 uppercase';
@@ -814,9 +1131,27 @@ return result;
 
             function createCoinListItem(symbol) {
                 const li = document.createElement('li');
-                li.className = "coin-item flex justify-between items-center p-3 cursor-pointer hover:bg-gray-700 border-b border-gray-700/50 transition-colors";
+                li.className = "coin-item flex justify-between items-center p-3 hover:bg-gray-700 border-b border-gray-700/50 transition-colors";
                 li.dataset.symbol = symbol;
-                li.innerHTML = `<span class="font-medium">${symbol.replace('USDT', '/USDT')}</span><span id="price-${symbol}" class="font-mono text-sm text-gray-400">...</span>`;
+
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'flex-grow flex justify-between items-center cursor-pointer mr-2';
+                infoDiv.innerHTML = `
+                    <span class="font-medium">${symbol.replace('USDT', '/USDT')}</span>
+                    <span id="price-${symbol}" class="font-mono text-sm text-gray-400">...</span>
+                `;
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-coin-btn p-1 text-gray-500 hover:text-red-500 rounded-md transition-colors flex-shrink-0';
+                removeBtn.title = `${symbol} Kaldır`;
+                removeBtn.innerHTML = `
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                `;
+
+                li.appendChild(infoDiv);
+                li.appendChild(removeBtn);
                 return li;
             }
 
@@ -850,7 +1185,6 @@ return result;
                 
                 try {
                     let generatedCode = await callGeminiAPI(userPrompt, systemInstruction);
-                    // Clean up the response from markdown fences
                     generatedCode = generatedCode.replace(/```javascript/g, '').replace(/```/g, '').trim();
                     pineEditor.value = generatedCode;
                 } catch (error) {
@@ -866,19 +1200,21 @@ return result;
                  if (isReplayModeActive) return;
                 const instance = chartInstances.find(inst => inst.id === activeChartId);
                 if (!instance || newInterval === instance.interval) return;
+                
+                unsubscribeFromStreams([`${instance.symbol.toLowerCase()}@kline_${instance.interval}`]);
                 instance.interval = newInterval;
                 fetchHistoricalData(instance);
-                setupChartWebSocket(instance);
-                setActiveChart(activeChartId); // To update label
+                setActiveChart(activeChartId);
             }
 
             function handleSymbolChange(newSymbol) {
                  if (isReplayModeActive) return;
                 const instance = chartInstances.find(inst => inst.id === activeChartId);
                 if (!instance || newSymbol === instance.symbol) return;
+                
+                unsubscribeFromStreams([`${instance.symbol.toLowerCase()}@kline_${instance.interval}`]);
                 instance.symbol = newSymbol;
                 fetchHistoricalData(instance);
-                setupChartWebSocket(instance);
                 closeSidebar();
             }
 
@@ -887,9 +1223,7 @@ return result;
                 if (newSymbol && !watchlistSymbols.includes(newSymbol)) {
                     watchlistSymbols.push(newSymbol);
                     coinList.appendChild(createCoinListItem(newSymbol));
-                    if (watchlistSocket && watchlistSocket.readyState === WebSocket.OPEN) {
-                        watchlistSocket.send(JSON.stringify({ method: "SUBSCRIBE", params: [`${newSymbol.toLowerCase()}@ticker`], id: Date.now() }));
-                    }
+                    subscribeToStreams([`${newSymbol.toLowerCase()}@ticker`]);
                 }
                 newCoinInput.value = '';
                 closeAddCoinModal();
@@ -902,6 +1236,20 @@ return result;
                     renderIndicatorsMenu();
                     alert(`"${scriptName.trim()}" kaydedildi!`);
                 }
+            }
+            
+            function handleRemoveCoin(symbolToRemove) {
+                const index = watchlistSymbols.indexOf(symbolToRemove);
+                if (index > -1) {
+                    watchlistSymbols.splice(index, 1);
+                }
+
+                const itemToRemove = coinList.querySelector(`li[data-symbol="${symbolToRemove}"]`);
+                if (itemToRemove) {
+                    itemToRemove.remove();
+                }
+
+                unsubscribeFromStreams([`${symbolToRemove.toLowerCase()}@ticker`]);
             }
 
             // --- Modal & Sidebar & Dropdown Logic ---
@@ -943,11 +1291,26 @@ return result;
             settingsToggle.addEventListener('click', () => settingsMenu.classList.toggle('hidden'));
             backgroundColorPicker.addEventListener('input', (e) => {
                 const newColor = e.target.value;
+                currentBackgroundColor = newColor; 
                 chartInstances.forEach(instance => {
                     if (instance.chart) {
-                        instance.chart.applyOptions({ layout: { backgroundColor: newColor } });
+                        instance.chart.applyOptions({ 
+                            layout: { 
+                                backgroundColor: newColor,
+                                textColor: 'rgba(229, 231, 235, 1)'
+                            }
+                        });
                     }
                 });
+            });
+
+            saveColorBtn.addEventListener('click', () => {
+                localStorage.setItem('chartBackgroundColor', currentBackgroundColor);
+                const icon = saveColorBtn.querySelector('svg');
+                icon.classList.add('text-green-400');
+                setTimeout(() => {
+                    icon.classList.remove('text-green-400');
+                }, 1500);
             });
             
             generateScriptBtn.addEventListener('click', handleGenerateScript);
@@ -986,8 +1349,18 @@ return result;
             sidebarOverlay.addEventListener('click', closeSidebar);
 
             coinList.addEventListener('click', (e) => {
-                const coinItem = e.target.closest('.coin-item');
-                if (coinItem) handleSymbolChange(coinItem.dataset.symbol);
+                const removeBtn = e.target.closest('.remove-coin-btn');
+                if (removeBtn) {
+                    const symbol = removeBtn.parentElement.dataset.symbol;
+                    handleRemoveCoin(symbol);
+                    return; 
+                }
+
+                const coinItem = e.target.closest('.coin-item > div');
+                if (coinItem) {
+                    const symbol = coinItem.parentElement.dataset.symbol;
+                    handleSymbolChange(symbol);
+                }
             });
             
             replayBtn.addEventListener('click', toggleReplayMode);
@@ -1005,6 +1378,27 @@ return result;
             });
             replayExitBtn.addEventListener('click', exitReplayMode);
             
+            drawingToolbar.addEventListener('click', (e) => {
+                const btn = e.target.closest('.drawing-tool-btn');
+                if (!btn) return;
+                const tool = btn.dataset.tool;
+                if (tool === 'clear') {
+                    clearAllDrawings();
+                } else {
+                    setActiveDrawingTool(tool);
+                }
+            });
+
+            drawingToolbarToggle.addEventListener('click', () => {
+                drawingToolbar.classList.toggle('hidden');
+                const icon = drawingToolbarToggle.querySelector('svg');
+                if (drawingToolbar.classList.contains('hidden')) {
+                    icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />';
+                } else {
+                    icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />';
+                }
+            });
+            
             addCoinBtn.addEventListener('click', openAddCoinModal);
             modalCancelBtn.addEventListener('click', closeAddCoinModal);
             modalAddBtn.addEventListener('click', handleAddNewCoin);
@@ -1019,13 +1413,18 @@ return result;
             });
 
             // --- Initial Load ---
-            applyLayout('1x1'); // Start with a single chart layout
+            const savedColor = localStorage.getItem('chartBackgroundColor');
+            if (savedColor) {
+                currentBackgroundColor = savedColor;
+                backgroundColorPicker.value = savedColor;
+            }
+
+            applyLayout('1x1'); 
             renderWatchlist();
             renderIndicatorsMenu();
-            setupWatchlistWebSocket();
+            subscribeToStreams(watchlistSymbols.map(s => `${s.toLowerCase()}@ticker`));
         });
     </script>
 </body>
 </html>
-
 
