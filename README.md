@@ -90,14 +90,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-900 text-white antialiased overflow-hidden flex flex-col h-screen">
+<body class="bg-gray-900 text-white antialiased overflow-hidden h-full">
 
-    <div class="w-full h-full p-4 flex flex-col flex-grow">
-        <!-- Header Section -->
-        <header class="flex-shrink-0">
-            <!-- Header can be used for a logo or main title if needed -->
-        </header>
-
+    <div class="w-full h-full p-4 flex flex-col">
         <!-- Main Chart Section -->
         <main class="bg-gray-800 rounded-lg shadow-2xl flex flex-col flex-grow min-h-0">
             <!-- Chart Header: Tabs, Indicators, and Timeframe Dropdown -->
@@ -1295,7 +1290,6 @@ return result;
                         instance.chart.applyOptions({ 
                             layout: { 
                                 backgroundColor: newColor,
-                                textColor: 'rgba(229, 231, 235, 1)'
                             }
                         });
                     }
