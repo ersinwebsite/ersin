@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -90,20 +90,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-900 text-white antialiased overflow-x-hidden flex flex-col h-screen">
+<body class="bg-gray-900 text-white antialiased overflow-hidden flex flex-col h-screen">
 
-    <div class="container mx-auto p-4 max-w-7xl flex flex-col flex-grow">
+    <div class="w-full h-full p-4 flex flex-col flex-grow">
         <!-- Header Section -->
-        <header class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-            <div class="flex-grow">
-                 <!-- This space can be used for a logo or symbol search in the future -->
-            </div>
+        <header class="flex-shrink-0">
+            <!-- Header can be used for a logo or main title if needed -->
         </header>
 
         <!-- Main Chart Section -->
-        <main class="bg-gray-800 rounded-lg shadow-2xl flex flex-col flex-grow min-h-[500px]">
+        <main class="bg-gray-800 rounded-lg shadow-2xl flex flex-col flex-grow min-h-0">
             <!-- Chart Header: Tabs, Indicators, and Timeframe Dropdown -->
-            <div class="flex justify-between items-center p-2 border-b border-gray-700">
+            <div class="flex justify-between items-center p-2 border-b border-gray-700 flex-shrink-0">
                 <!-- Left side: Tabs and Indicators -->
                 <div class="flex items-center space-x-2">
                      <div class="flex space-x-2">
@@ -210,7 +208,7 @@
             </div>
 
             <!-- Tab Content -->
-            <div id="tab-content-wrapper" class="flex-grow relative">
+            <div id="tab-content-wrapper" class="flex-grow relative min-h-0">
                 <!-- Chart Panel -->
                 <div id="chart-panel" class="w-full h-full relative">
                     <!-- Drawing Toolbar -->
