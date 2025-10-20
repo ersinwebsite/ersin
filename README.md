@@ -66,7 +66,7 @@
 <body class="bg-gray-900 text-gray-200">
 
     <div id="app">
-        <!-- Header --><header class="bg-gray-800 border-b border-gray-700 px-4 h-14 flex justify-between items-center shadow-lg relative z-10 shrink-0">
+        <!-- Header --><header class="bg-gray-800 border-b border-gray-700 px-4 h-12 flex justify-between items-center shadow-lg relative z-10 shrink-0">
             <!-- Left: Symbol Name, Coins & Timeframe Dropdowns --><div class="flex items-center space-x-4">
                 <h1 id="header-symbol" class="text-lg font-bold text-white">BTC/USDT</h1>
                 <!-- Coinler Dropdown --><div class="dropdown relative hidden lg:inline-block">
@@ -448,5 +448,4 @@
     </script>
 </body>
 </html>
-
 
