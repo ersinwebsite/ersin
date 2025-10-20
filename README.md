@@ -16,6 +16,15 @@
             font-family: 'Inter', sans-serif;
             background-color: #111827; /* bg-gray-900 */
         }
+        #app {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+        }
         .btn-active {
             background-color: #3b82f6; /* blue-500 */
             color: white;
@@ -56,8 +65,8 @@
 </head>
 <body class="bg-gray-900 text-gray-200">
 
-    <div id="app" class="flex flex-col h-screen w-full">
-        <!-- Header --><header class="bg-gray-800 border-b border-gray-700 px-4 py-2 flex justify-between items-center shadow-lg relative z-10">
+    <div id="app">
+        <!-- Header --><header class="bg-gray-800 border-b border-gray-700 px-4 py-2 flex justify-between items-center shadow-lg relative z-10 shrink-0">
             <!-- Left: Symbol Name, Coins & Timeframe Dropdowns --><div class="flex items-center space-x-4">
                 <h1 id="header-symbol" class="text-lg font-bold text-white">BTC/USDT</h1>
                 <!-- Coinler Dropdown --><div class="dropdown relative hidden lg:inline-block">
@@ -95,8 +104,8 @@
             </div>
         </header>
 
-        <div class="flex flex-1 min-h-0">
-            <!-- Main Content (Chart) --><main class="flex-1 flex flex-col">
+        <div class="flex-1 min-h-0">
+            <!-- Main Content (Chart) --><main class="w-full h-full">
                 <div id="chart-container" class="w-full h-full">
                     <!-- Yükleniyor göstergesi kaldırıldı -->
                 </div>
