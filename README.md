@@ -66,7 +66,7 @@
 <body class="bg-gray-900 text-gray-200">
 
     <div id="app">
-        <!-- Header --><header class="bg-gray-800 border-b border-gray-700 px-4 py-2 flex justify-between items-center shadow-lg relative z-10 shrink-0">
+        <!-- Header --><header class="bg-gray-800 border-b border-gray-700 px-4 h-14 flex justify-between items-center shadow-lg relative z-10 shrink-0">
             <!-- Left: Symbol Name, Coins & Timeframe Dropdowns --><div class="flex items-center space-x-4">
                 <h1 id="header-symbol" class="text-lg font-bold text-white">BTC/USDT</h1>
                 <!-- Coinler Dropdown --><div class="dropdown relative hidden lg:inline-block">
@@ -262,10 +262,11 @@
                 const dataFromCache = dataCache[`${symbol}_${interval}`];
                 if (dataFromCache) {
                     candleSeries.setData(dataFromCache);
-                    return;
+                    return dataFromCache;
                 }
                 const data = await fetchAndCacheData(symbol, interval);
                 candleSeries.setData(data);
+                return data;
             }
             
             function preFetchDataForSymbol(symbol) {
@@ -315,22 +316,30 @@
                 };
             }
             
-            async function updateChart() {
+            async function updateChart(isNewCoin = false) {
                 headerSymbol.textContent = `${currentSymbol.replace("USDT", "")}/USDT`;
                 
-                // Zaman dilimi gösterimini kısaltmalarla güncelle
                 const displayTimeframe = currentTimeframe
                     .replace('h', 's')
                     .replace('d', 'g')
-                    .replace('M', 'a'); // Ay için
+                    .replace('M', 'a');
                 selectedTimeframeDisplay.textContent = displayTimeframe;
 
-                // setTimeout ile UI'ın donmasını engelliyoruz
                 setTimeout(async () => {
                     try {
-                        await getHistoricalData(currentSymbol, currentTimeframe);
+                        const data = await getHistoricalData(currentSymbol, currentTimeframe);
                         subscribeToStream(currentSymbol, currentTimeframe);
-                        chart.timeScale().fitContent();
+                        
+                        if (isNewCoin && data && data.length > 0) {
+                            const dataSize = data.length;
+                            const barsToShow = 150;
+                            const fromIndex = Math.max(0, dataSize - barsToShow);
+                            const toIndex = dataSize - 1;
+                            chart.timeScale().setVisibleLogicalRange({ from: fromIndex, to: toIndex });
+                        } else {
+                            chart.timeScale().fitContent();
+                        }
+
                     } catch (error) {
                         console.error("Grafik güncellenirken hata oluştu:", error);
                     }
@@ -342,7 +351,7 @@
             
             function selectCoin(symbol) { 
                 currentSymbol = symbol; 
-                updateChart();
+                updateChart(true);
                 preFetchDataForSymbol(symbol); 
             }
 
@@ -425,7 +434,7 @@
                 renderMobileCoinList();
 
                 if (coins.length > 0) currentSymbol = coins[0];
-                await updateChart();
+                await updateChart(true);
                 document.querySelector(`.timeframe-btn[data-interval="${currentTimeframe}"]`)?.classList.add('btn-active');
                 document.querySelector(`.timeframe-btn-mobile[data-interval="${currentTimeframe}"]`)?.classList.add('btn-active');
                 
@@ -439,4 +448,5 @@
     </script>
 </body>
 </html>
+
 
