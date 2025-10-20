@@ -56,7 +56,7 @@
 </head>
 <body class="bg-gray-900 text-gray-200">
 
-    <div id="app" class="flex flex-col h-screen">
+    <div id="app" class="flex flex-col h-screen w-screen">
         <!-- Header --><header class="bg-gray-800 border-b border-gray-700 px-4 py-2 flex justify-between items-center shadow-lg relative z-10">
             <!-- Left: Symbol Name, Coins & Timeframe Dropdowns --><div class="flex items-center space-x-4">
                 <h1 id="header-symbol" class="text-lg font-bold text-white">BTC/USDT</h1>
