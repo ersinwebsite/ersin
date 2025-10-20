@@ -260,9 +260,10 @@
                             const fromIndex = Math.max(0, dataSize - barsToShow);
                             const toIndex = dataSize - 1;
                             chart.timeScale().setVisibleLogicalRange({ from: fromIndex, to: toIndex });
-                        } else {
-                            chart.timeScale().fitContent();
+                        } else if (isNewCoin) {
+                             chart.timeScale().fitContent();
                         }
+                        // When changing timeframe (isNewCoin is false), do not change the zoom/scroll position.
 
                     } catch (error) {
                         console.error("Grafik güncellenirken hata oluştu:", error);
