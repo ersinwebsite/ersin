@@ -245,7 +245,7 @@
                 
                 const activeTimeframe = TIMEFRAMES.find(tf => tf.interval === currentTimeframe);
                 if (activeTimeframe) {
-                    const shortLabel = activeTimeframe.interval.replace('h', 's').replace('d', 'g').replace('M', 'a');
+                    const shortLabel = activeTimeframe.interval.replace('h', 'S').replace('d', 'g').replace('M', 'a');
                     selectedTimeframeDisplay.textContent = shortLabel;
                 }
 
