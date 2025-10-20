@@ -188,18 +188,19 @@
 
                 const fetchPromise = (async () => {
                     try {
+                        let allKlines = [], endTime = Date.now(), limit = 1000;
                         const now = new Date();
                         let startTime = 0;
-                        switch (interval) {
-                            case '5m': startTime = new Date(now.setDate(now.getDate() - 7)).getTime(); break;
-                            case '15m': startTime = new Date(now.setDate(now.getDate() - 14)).getTime(); break;
-                            case '30m': startTime = new Date(now.setDate(now.getDate() - 30)).getTime(); break;
-                            case '1h': startTime = new Date(now.setDate(now.getDate() - 90)).getTime(); break;
-                            case '4h': startTime = new Date(now.setFullYear(now.getFullYear() - 1)).getTime(); break;
-                            default: startTime = 0; // 1d ve 1M için limit yok
-                        }
 
-                        let allKlines = [], endTime = Date.now(), limit = 1000;
+                        // Akıllı veri limiti: Kısa zaman aralıkları için daha az veri çek
+                        switch (interval) {
+                            case '5m': startTime = new Date(now.setDate(now.getDate() - 3)).getTime(); break;
+                            case '15m': startTime = new Date(now.setDate(now.getDate() - 7)).getTime(); break;
+                            case '30m': startTime = new Date(now.setDate(now.getDate() - 14)).getTime(); break;
+                            case '1h': startTime = new Date(now.setDate(now.getDate() - 30)).getTime(); break;
+                            case '4h': startTime = new Date(now.setDate(now.getDate() - 120)).getTime(); break;
+                            default: startTime = 0; // 1d ve 1M için limit yok, tüm geçmiş
+                        }
 
                         while (true) {
                             const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}&endTime=${endTime}`;
