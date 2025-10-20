@@ -185,6 +185,10 @@
                     desktopBtn.className = 'timeframe-btn rounded-md transition-colors duration-200';
                     desktopBtn.dataset.interval = tf.interval;
                     desktopBtn.textContent = tf.label;
+                    desktopBtn.addEventListener('click', () => {
+                        selectTimeframe(tf.interval);
+                        document.getElementById('timeframe-list-header').classList.remove('show');
+                    });
                     desktopList.appendChild(desktopBtn);
 
                     // Mobile button
@@ -192,6 +196,10 @@
                     mobileBtn.className = 'timeframe-btn-mobile text-lg';
                     mobileBtn.dataset.interval = tf.interval;
                     mobileBtn.textContent = tf.label;
+                    mobileBtn.addEventListener('click', () => {
+                        selectTimeframe(tf.interval);
+                        document.getElementById('mobile-menu').classList.add('hidden');
+                    });
                     mobileList.appendChild(mobileBtn);
                 });
             }
@@ -253,7 +261,6 @@
 
             // Masaüstü Zaman Aralığı Dropdown
             document.getElementById('timeframe-dropdown-btn').addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('timeframe-list-header').classList.toggle('show'); });
-            document.getElementById('timeframe-list-header').addEventListener('click', (e) => { if (e.target.matches('button.timeframe-btn')) { selectTimeframe(e.target.dataset.interval); document.getElementById('timeframe-list-header').classList.remove('show'); } });
             
             // Masaüstü Coinler Dropdown
             document.getElementById('coins-dropdown-btn').addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('coin-list').classList.toggle('show'); });
@@ -266,7 +273,7 @@
             const mobileMenu = document.getElementById('mobile-menu');
             mobileMenu.addEventListener('click', e => {
                 const target = e.target;
-                if (target.matches('.timeframe-btn-mobile')) { selectTimeframe(target.dataset.interval); mobileMenu.classList.add('hidden'); }
+                // Click events for mobile timeframes are handled on the buttons themselves now
                 const addBtn = target.closest('#add-coin-btn-mobile');
                 const deleteBtn = target.closest('.delete-coin-btn');
                 const coinItem = target.closest('.coin-item-mobile');
