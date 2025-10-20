@@ -95,8 +95,8 @@
         </header>
 
         <div class="flex flex-1 min-h-0">
-            <!-- Main Content (Chart) --><main class="flex-1 flex flex-col p-2">
-                <div id="chart-container" class="w-full h-full rounded-lg relative">
+            <!-- Main Content (Chart) --><main class="flex-1 flex flex-col">
+                <div id="chart-container" class="w-full h-full">
                     <!-- Yükleniyor göstergesi kaldırıldı -->
                 </div>
             </main>
@@ -429,4 +429,5 @@
     </script>
 </body>
 </html>
+
 
