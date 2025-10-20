@@ -8,6 +8,7 @@
     <!-- Lightweight Charts by TradingView --><script src="https://cdn.jsdelivr.net/npm/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         html, body {
+            width: 100%;
             height: 100%;
             margin: 0;
             padding: 0;
@@ -429,5 +430,4 @@
     </script>
 </body>
 </html>
-
 
