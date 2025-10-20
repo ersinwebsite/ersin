@@ -83,13 +83,7 @@
                         <span id="selected-timeframe-display" class="text-sm text-gray-400 ml-1"></span>
                     </button>
                     <div id="timeframe-list-header" class="dropdown-content mt-2 p-1">
-                        <button class="timeframe-btn rounded-md transition-colors duration-200" data-interval="5m">5 dk</button>
-                        <button class="timeframe-btn rounded-md transition-colors duration-200" data-interval="15m">15 dk</button>
-                        <button class="timeframe-btn rounded-md transition-colors duration-200" data-interval="30m">30 dk</button>
-                        <button class="timeframe-btn rounded-md transition-colors duration-200" data-interval="1h">1 Saat</button>
-                        <button class="timeframe-btn rounded-md transition-colors duration-200" data-interval="4h">4 Saat</button>
-                        <button class="timeframe-btn rounded-md transition-colors duration-200 btn-active" data-interval="1d">1 Gün</button>
-                        <button class="timeframe-btn rounded-md transition-colors duration-200" data-interval="1M">1 Ay</button>
+                        <!-- Zaman dilimleri dinamik olarak buraya eklenecek -->
                     </div>
                 </div>
             </div>
@@ -166,164 +160,62 @@
             const DEFAULT_COINS = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT'];
             let allBinanceSymbols = [];
 
+            const TIMEFRAMES = [
+                { interval: '5m', label: '5 dk' }, { interval: '15m', label: '15 dk' },
+                { interval: '30m', label: '30 dk' }, { interval: '1h', label: '1 Saat' },
+                { interval: '4h', label: '4 Saat' }, { interval: '1d', label: '1 Gün' },
+                { interval: '1M', label: '1 Ay' },
+            ];
+
             // --- DATA & STATE MANAGEMENT ---
             function loadCoins() { /* ... unchanged ... */ const storedCoins = localStorage.getItem('tradingAppCoins'); if (storedCoins) { coins = JSON.parse(storedCoins); } else { coins = [...DEFAULT_COINS]; } }
             function saveCoins() { /* ... unchanged ... */ localStorage.setItem('tradingAppCoins', JSON.stringify(coins)); }
             async function fetchBinanceSymbols() { /* ... unchanged ... */ try { const response = await fetch('https://api.binance.com/api/v3/exchangeInfo'); const data = await response.json(); allBinanceSymbols = data.symbols .filter(s => s.quoteAsset === 'USDT' && s.status === 'TRADING') .map(s => s.symbol); } catch (error) { console.error("Binance sembolleri alınamadı:", error); } }
 
             // --- UI RENDERING ---
-            function renderDesktopCoinList() {
-                const list = document.getElementById('coin-list');
-                list.innerHTML = '';
-                coins.forEach(symbol => {
-                    list.innerHTML += `
-                        <a href="#" class="coin-item flex justify-between items-center group rounded-md" data-symbol="${symbol}">
-                            <span class="flex items-center px-3 py-2 text-sm">
-                               ${symbol.replace('USDT','/USDT')}
-                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="delete-coin-btn hidden group-hover:block text-gray-500 hover:text-red-400 ml-2" data-symbol="${symbol}"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            </span>
-                        </a>
-                    `;
+            function renderTimeframeButtons() {
+                const desktopList = document.getElementById('timeframe-list-header');
+                const mobileList = document.getElementById('timeframe-list-mobile');
+                desktopList.innerHTML = '';
+                mobileList.innerHTML = '';
+
+                TIMEFRAMES.forEach(tf => {
+                    // Desktop button
+                    const desktopBtn = document.createElement('button');
+                    desktopBtn.className = 'timeframe-btn rounded-md transition-colors duration-200';
+                    desktopBtn.dataset.interval = tf.interval;
+                    desktopBtn.textContent = tf.label;
+                    desktopList.appendChild(desktopBtn);
+
+                    // Mobile button
+                    const mobileBtn = document.createElement('button');
+                    mobileBtn.className = 'timeframe-btn-mobile text-lg';
+                    mobileBtn.dataset.interval = tf.interval;
+                    mobileBtn.textContent = tf.label;
+                    mobileList.appendChild(mobileBtn);
                 });
-                list.innerHTML += `
-                    <div class="border-t border-gray-600 my-1 mx-2"></div>
-                    <a href="#" id="add-coin-btn" class="flex items-center space-x-2 text-green-400 rounded-md hover:bg-gray-700">
-                        <span class="flex items-center p-2">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                           <span>Ekle</span>
-                        </span>
-                    </a>
-                `;
             }
 
-            function renderMobileCoinList() {
-                const list = document.getElementById('coin-list-mobile');
-                list.innerHTML = '';
-                coins.forEach(symbol => {
-                    list.innerHTML += `
-                        <a href="#" class="coin-item-mobile flex justify-between items-center w-full" data-symbol="${symbol}">
-                            <span class="flex items-center text-sm">
-                                ${symbol.replace('USDT','/USDT')}
-                            </span>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="delete-coin-btn text-gray-500 hover:text-red-400" data-symbol="${symbol}"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        </a>
-                    `;
-                });
-                 list.innerHTML += `
-                    <a href="#" id="add-coin-btn-mobile" class="flex items-center space-x-2 mt-4 text-green-400">
-                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        <span>Ekle</span>
-                    </a>
-                `;
-            }
+            function renderDesktopCoinList() { /* ... unchanged ... */ const list = document.getElementById('coin-list'); list.innerHTML = ''; coins.forEach(symbol => { list.innerHTML += ` <a href="#" class="coin-item flex justify-between items-center group rounded-md" data-symbol="${symbol}"> <span class="flex items-center px-3 py-2 text-sm"> ${symbol.replace('USDT','/USDT')} <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="delete-coin-btn hidden group-hover:block text-gray-500 hover:text-red-400 ml-2" data-symbol="${symbol}"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> </span> </a> `; }); list.innerHTML += ` <div class="border-t border-gray-600 my-1 mx-2"></div> <a href="#" id="add-coin-btn" class="flex items-center space-x-2 text-green-400 rounded-md hover:bg-gray-700"> <span class="flex items-center p-2"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> <span>Ekle</span> </span> </a> `; }
+            function renderMobileCoinList() { /* ... unchanged ... */ const list = document.getElementById('coin-list-mobile'); list.innerHTML = ''; coins.forEach(symbol => { list.innerHTML += ` <a href="#" class="coin-item-mobile flex justify-between items-center w-full" data-symbol="${symbol}"> <span class="flex items-center text-sm"> ${symbol.replace('USDT','/USDT')} </span> <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="delete-coin-btn text-gray-500 hover:text-red-400" data-symbol="${symbol}"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> </a> `; }); list.innerHTML += ` <a href="#" id="add-coin-btn-mobile" class="flex items-center space-x-2 mt-4 text-green-400"> <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> <span>Ekle</span> </a> `; }
 
             // --- CHART & API LOGIC ---
             const chart = LightweightCharts.createChart(chartContainer, { /* ... unchanged ... */ width: chartContainer.clientWidth, height: chartContainer.clientHeight, layout: { backgroundColor: '#ffffff', textColor: 'rgba(0, 0, 0, 0.9)' }, grid: { vertLines: { visible: false }, horzLines: { visible: false } }, crosshair: { mode: LightweightCharts.CrosshairMode.Normal }, rightPriceScale: { borderColor: '#D1D5DB' }, timeScale: { borderColor: '#D1D5DB', timeVisible: true, secondsVisible: false } });
             candleSeries = chart.addCandlestickSeries({ /* ... unchanged ... */ upColor: '#22c55e', downColor: '#ef4444', borderDownColor: '#ef4444', borderUpColor: '#22c55e', wickDownColor: '#ef4444', wickUpColor: '#22c55e', priceLineVisible: false, });
             
-            async function fetchAndCacheData(symbol, interval) {
-                const cacheKey = `${symbol}_${interval}`;
-                if (dataCache[cacheKey]) return dataCache[cacheKey];
-                if (pendingFetches[cacheKey]) return await pendingFetches[cacheKey];
-
-                const fetchPromise = (async () => {
-                    try {
-                        let allKlines = [], endTime = Date.now(), limit = 1000;
-
-                        while (true) {
-                            const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}&endTime=${endTime}`;
-                            const response = await fetch(url);
-                            if (!response.ok) throw new Error(`Binance API error: ${response.status}`);
-                            const klines = await response.json();
-                            if (klines.length === 0) break;
-                            allKlines = klines.concat(allKlines);
-                            const firstKlineTimestamp = klines[0][0];
-                            endTime = firstKlineTimestamp - 1;
-                            await new Promise(resolve => setTimeout(resolve, 100)); // API rate limit için bekleme
-                        }
-                        
-                        const formattedData = allKlines.map(item => ({ time: item[0] / 1000, open: parseFloat(item[1]), high: parseFloat(item[2]), low: parseFloat(item[3]), close: parseFloat(item[4]), }));
-                        
-                        if (formattedData.length > 0) dataCache[cacheKey] = formattedData;
-                        return formattedData;
-                    } catch (error) {
-                        console.error(`Veri çekme hatası for ${cacheKey}:`, error);
-                        return [];
-                    } finally {
-                        delete pendingFetches[cacheKey];
-                    }
-                })();
-                
-                pendingFetches[cacheKey] = fetchPromise;
-                return await fetchPromise;
-            }
-
-            async function getHistoricalData(symbol, interval) {
-                const dataFromCache = dataCache[`${symbol}_${interval}`];
-                if (dataFromCache) {
-                    candleSeries.setData(dataFromCache);
-                    return dataFromCache;
-                }
-                const data = await fetchAndCacheData(symbol, interval);
-                candleSeries.setData(data);
-                return data;
-            }
-            
-            function preFetchDataForSymbol(symbol) {
-                const timeframes = ['5m', '15m', '30m', '1h', '4h', '1d', '1M'];
-                timeframes.forEach(tf => {
-                    fetchAndCacheData(symbol, tf);
-                });
-            }
-
-            function subscribeToStream(symbol, interval) {
-                if (websocket) {
-                    // Önceki bağlantıdan kalan olay dinleyicilerini temizle
-                    websocket.onopen = null;
-                    websocket.onmessage = null;
-                    websocket.onerror = null;
-                    websocket.onclose = null;
-                    if (websocket.readyState === WebSocket.OPEN || websocket.readyState === WebSocket.CONNECTING) {
-                       websocket.close();
-                    }
-                }
-                
-                const wsUrl = `wss://stream.binance.com/ws/${symbol.toLowerCase()}@kline_${interval}`; // Port 9443 kaldırıldı
-                websocket = new WebSocket(wsUrl);
-
-                websocket.onopen = () => {
-                    console.log(`WebSocket bağlantısı başarılı: ${symbol}`);
-                };
-
-                websocket.onmessage = (event) => {
-                    const message = JSON.parse(event.data);
-                    const kline = message.k;
-                    candleSeries.update({
-                        time: kline.t / 1000,
-                        open: parseFloat(kline.o),
-                        high: parseFloat(kline.h),
-                        low: parseFloat(kline.l),
-                        close: parseFloat(kline.c),
-                    });
-                };
-                websocket.onerror = (error) => {
-                    console.error(`WebSocket Hatası for ${symbol}:`, error);
-                };
-                websocket.onclose = (event) => {
-                    if (!event.wasClean) {
-                        console.warn(`WebSocket bağlantısı beklenmedik şekilde kesildi: ${symbol}`);
-                    }
-                };
-            }
+            async function fetchAndCacheData(symbol, interval) { /* ... unchanged ... */ const cacheKey = `${symbol}_${interval}`; if (dataCache[cacheKey]) return dataCache[cacheKey]; if (pendingFetches[cacheKey]) return await pendingFetches[cacheKey]; const fetchPromise = (async () => { try { let allKlines = [], endTime = Date.now(), limit = 1000; while (true) { const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}&endTime=${endTime}`; const response = await fetch(url); if (!response.ok) throw new Error(`Binance API error: ${response.status}`); const klines = await response.json(); if (klines.length === 0) break; allKlines = klines.concat(allKlines); const firstKlineTimestamp = klines[0][0]; endTime = firstKlineTimestamp - 1; await new Promise(resolve => setTimeout(resolve, 100)); } const formattedData = allKlines.map(item => ({ time: item[0] / 1000, open: parseFloat(item[1]), high: parseFloat(item[2]), low: parseFloat(item[3]), close: parseFloat(item[4]), })); if (formattedData.length > 0) dataCache[cacheKey] = formattedData; return formattedData; } catch (error) { console.error(`Veri çekme hatası for ${cacheKey}:`, error); return []; } finally { delete pendingFetches[cacheKey]; } })(); pendingFetches[cacheKey] = fetchPromise; return await fetchPromise; }
+            async function getHistoricalData(symbol, interval) { /* ... unchanged ... */ const dataFromCache = dataCache[`${symbol}_${interval}`]; if (dataFromCache) { candleSeries.setData(dataFromCache); return dataFromCache; } const data = await fetchAndCacheData(symbol, interval); candleSeries.setData(data); return data; }
+            function preFetchDataForSymbol(symbol) { const timeframes = TIMEFRAMES.map(tf => tf.interval); timeframes.forEach(tf => { fetchAndCacheData(symbol, tf); }); }
+            function subscribeToStream(symbol, interval) { /* ... unchanged ... */ if (websocket) { websocket.onopen = null; websocket.onmessage = null; websocket.onerror = null; websocket.onclose = null; if (websocket.readyState === WebSocket.OPEN || websocket.readyState === WebSocket.CONNECTING) { websocket.close(); } } const wsUrl = `wss://stream.binance.com/ws/${symbol.toLowerCase()}@kline_${interval}`; websocket = new WebSocket(wsUrl); websocket.onopen = () => { console.log(`WebSocket bağlantısı başarılı: ${symbol}`); }; websocket.onmessage = (event) => { const message = JSON.parse(event.data); const kline = message.k; candleSeries.update({ time: kline.t / 1000, open: parseFloat(kline.o), high: parseFloat(kline.h), low: parseFloat(kline.l), close: parseFloat(kline.c), }); }; websocket.onerror = (error) => { console.error(`WebSocket Hatası for ${symbol}:`, error); }; websocket.onclose = (event) => { if (!event.wasClean) { console.warn(`WebSocket bağlantısı beklenmedik şekilde kesildi: ${symbol}`); } }; }
             
             async function updateChart(isNewCoin = false) {
                 headerSymbol.textContent = `${currentSymbol.replace("USDT", "")}/USDT`;
                 
-                const displayTimeframe = currentTimeframe
-                    .replace('h', 's')
-                    .replace('d', 'g')
-                    .replace('M', 'a');
-                selectedTimeframeDisplay.textContent = displayTimeframe;
+                const activeTimeframe = TIMEFRAMES.find(tf => tf.interval === currentTimeframe);
+                if (activeTimeframe) {
+                    const shortLabel = activeTimeframe.interval.replace('h', 's').replace('d', 'g').replace('M', 'a');
+                    selectedTimeframeDisplay.textContent = shortLabel;
+                }
 
                 setTimeout(async () => {
                     try {
@@ -347,34 +239,25 @@
             }
 
             // --- EVENT HANDLERS & LISTENERS ---
-            function selectTimeframe(interval, btnElement) { currentTimeframe = interval; document.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('btn-active')); document.querySelectorAll('.timeframe-btn-mobile').forEach(btn => btn.classList.remove('btn-active')); if(btnElement) btnElement.classList.add('btn-active'); document.querySelector(`.timeframe-btn-mobile[data-interval="${interval}"]`)?.classList.add('btn-active'); document.querySelector(`.timeframe-btn[data-interval="${interval}"]`)?.classList.add('btn-active'); updateChart(); }
-            
-            function selectCoin(symbol) { 
-                currentSymbol = symbol; 
-                updateChart(true);
-                preFetchDataForSymbol(symbol); 
+            function selectTimeframe(interval) {
+                currentTimeframe = interval;
+                document.querySelectorAll('.timeframe-btn, .timeframe-btn-mobile').forEach(btn => {
+                    btn.classList.toggle('btn-active', btn.dataset.interval === interval);
+                });
+                updateChart();
             }
-
+            
+            function selectCoin(symbol) { /* ... unchanged ... */ currentSymbol = symbol; updateChart(true); preFetchDataForSymbol(symbol); }
             function addCoinHandler(newSymbol) { /* ... unchanged ... */ if (!newSymbol || coins.includes(newSymbol)) return; coins.push(newSymbol); saveCoins(); renderDesktopCoinList(); renderMobileCoinList(); selectCoin(newSymbol); closeAddCoinModal(); }
             function deleteCoinHandler(symbol) { /* ... unchanged ... */ if (coins.length <= 1) { return; } coins = coins.filter(c => c !== symbol); saveCoins(); if (currentSymbol === symbol) { selectCoin(coins[0]); } renderDesktopCoinList(); renderMobileCoinList(); }
 
             // Masaüstü Zaman Aralığı Dropdown
             document.getElementById('timeframe-dropdown-btn').addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('timeframe-list-header').classList.toggle('show'); });
-            document.getElementById('timeframe-list-header').addEventListener('click', (e) => { if (e.target && e.target.matches('button.timeframe-btn')) { selectTimeframe(e.target.dataset.interval, e.target); document.getElementById('timeframe-list-header').classList.remove('show'); } });
+            document.getElementById('timeframe-list-header').addEventListener('click', (e) => { if (e.target.matches('button.timeframe-btn')) { selectTimeframe(e.target.dataset.interval); document.getElementById('timeframe-list-header').classList.remove('show'); } });
             
             // Masaüstü Coinler Dropdown
             document.getElementById('coins-dropdown-btn').addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('coin-list').classList.toggle('show'); });
-            document.getElementById('coin-list').addEventListener('click', (e) => {
-                e.preventDefault();
-                const target = e.target;
-                const deleteBtn = target.closest('.delete-coin-btn');
-                const addBtn = target.closest('#add-coin-btn');
-                const coinItem = target.closest('.coin-item');
-
-                if (deleteBtn) { e.stopPropagation(); deleteCoinHandler(deleteBtn.dataset.symbol); } 
-                else if (addBtn) { openAddCoinModal(); document.getElementById('coin-list').classList.remove('show'); } 
-                else if (coinItem) { selectCoin(coinItem.dataset.symbol); document.getElementById('coin-list').classList.remove('show'); }
-            });
+            document.getElementById('coin-list').addEventListener('click', (e) => { e.preventDefault(); const target = e.target; const deleteBtn = target.closest('.delete-coin-btn'); const addBtn = target.closest('#add-coin-btn'); const coinItem = target.closest('.coin-item'); if (deleteBtn) { e.stopPropagation(); deleteCoinHandler(deleteBtn.dataset.symbol); } else if (addBtn) { openAddCoinModal(); document.getElementById('coin-list').classList.remove('show'); } else if (coinItem) { selectCoin(coinItem.dataset.symbol); document.getElementById('coin-list').classList.remove('show'); } });
 
             // Açık dropdown'ları kapatmak için genel click listener
             window.addEventListener('click', (e) => { const coinList = document.getElementById('coin-list'); if (!e.target.closest('#coins-dropdown-btn') && coinList.classList.contains('show')) { coinList.classList.remove('show'); } const timeframeList = document.getElementById('timeframe-list-header'); if (!e.target.closest('#timeframe-dropdown-btn') && timeframeList.classList.contains('show')) { timeframeList.classList.remove('show'); } });
@@ -383,7 +266,7 @@
             const mobileMenu = document.getElementById('mobile-menu');
             mobileMenu.addEventListener('click', e => {
                 const target = e.target;
-                if (target.matches('.timeframe-btn-mobile')) { selectTimeframe(target.dataset.interval, target); mobileMenu.classList.add('hidden'); }
+                if (target.matches('.timeframe-btn-mobile')) { selectTimeframe(target.dataset.interval); mobileMenu.classList.add('hidden'); }
                 const addBtn = target.closest('#add-coin-btn-mobile');
                 const deleteBtn = target.closest('.delete-coin-btn');
                 const coinItem = target.closest('.coin-item-mobile');
@@ -394,18 +277,7 @@
             });
             
             const mobileMenuBtn = document.getElementById('mobile-menu-btn'); 
-            const mobileMenuCloseBtn = document.getElementById('mobile-menu-close-btn'); 
-            const timeframeListMobile = document.getElementById('timeframe-list-mobile'); 
-            function populateMobileTimeframes() { 
-                timeframeListMobile.innerHTML = ''; 
-                document.querySelectorAll('#timeframe-list-header .timeframe-btn').forEach(btn => { 
-                    const newBtn = btn.cloneNode(true); 
-                    newBtn.classList.add('timeframe-btn-mobile'); 
-                    newBtn.classList.remove('px-2', 'py-1', 'text-sm'); 
-                    timeframeListMobile.appendChild(newBtn); 
-                }); 
-            } 
-            populateMobileTimeframes(); 
+            const mobileMenuCloseBtn = document.getElementById('mobile-menu-close-btn');
             mobileMenuBtn.addEventListener('click', () => mobileMenu.classList.remove('hidden')); 
             mobileMenuCloseBtn.addEventListener('click', () => mobileMenu.classList.add('hidden'));
 
@@ -429,17 +301,22 @@
             // --- İLK YÜKLEME ---
             async function start() {
                 loadCoins();
-                saveCoins(); // İlk çalıştırmada varsayılanları kaydetmek için
+                saveCoins();
+                renderTimeframeButtons();
                 renderDesktopCoinList();
                 renderMobileCoinList();
 
                 if (coins.length > 0) currentSymbol = coins[0];
+                
+                // Set initial active button
+                document.querySelectorAll('.timeframe-btn, .timeframe-btn-mobile').forEach(btn => {
+                    btn.classList.toggle('btn-active', btn.dataset.interval === currentTimeframe);
+                });
+                
                 await updateChart(true);
-                document.querySelector(`.timeframe-btn[data-interval="${currentTimeframe}"]`)?.classList.add('btn-active');
-                document.querySelector(`.timeframe-btn-mobile[data-interval="${currentTimeframe}"]`)?.classList.add('btn-active');
                 
                 await fetchBinanceSymbols();
-                preFetchDataForSymbol(currentSymbol); // İlk coin için önbellekleme başlat
+                preFetchDataForSymbol(currentSymbol);
             }
             start();
         }
