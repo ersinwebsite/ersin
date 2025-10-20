@@ -86,6 +86,16 @@
                         <!-- Zaman dilimleri dinamik olarak buraya eklenecek -->
                     </div>
                 </div>
+                <!-- Gösterge Dropdown --><div class="dropdown relative hidden lg:inline-block">
+                    <button id="indicator-dropdown-btn" class="flex items-center space-x-2 px-2 py-1 text-sm rounded-md hover:bg-gray-700">
+                        <span>Gösterge</span>
+                    </button>
+                    <div id="indicator-list" class="dropdown-content mt-2">
+                        <button id="macd-indicator-btn" class="flex justify-between items-center group rounded-md w-full">
+                             <span class="px-3 py-2 text-sm">MACD</span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Center: Empty --><div id="header-menu" class="absolute left-1/2 -translate-x-1/2 hidden lg:flex items-center">
@@ -98,12 +108,12 @@
             </div>
         </header>
 
-        <div class="flex-1 min-h-0">
-            <!-- Main Content (Chart) --><main class="w-full h-full">
+        <div class="flex-1 min-h-0 flex flex-col">
+            <!-- Main Content (Chart) --><main id="main-chart-area" class="w-full flex-1">
                 <div id="chart-container" class="w-full h-full">
-                    <!-- Yükleniyor göstergesi kaldırıldı -->
                 </div>
             </main>
+             <!-- MACD Chart Pane --><div id="macd-chart-container" class="w-full h-0 shrink-0 bg-white"></div>
         </div>
     </div>
     
@@ -123,6 +133,12 @@
                  <h3 class="text-gray-400 text-sm font-bold mt-6 mb-4">Coinler</h3>
                  <div id="coin-list-mobile" class="flex flex-col items-start space-y-4 w-full">
                     <!-- Mobil coin listesi buraya dinamik olarak eklenecek --></div>
+            </div>
+
+             <div>
+                 <h3 class="text-gray-400 text-sm font-bold mt-6 mb-4">Göstergeler</h3>
+                 <div id="indicator-list-mobile" class="flex flex-col items-start space-y-4 w-full">
+                    <!-- Mobil gösterge listesi buraya eklenecek --></div>
             </div>
         </div>
     </div>
@@ -146,20 +162,25 @@
     <script>
         function initializeApp() {
             const chartContainer = document.getElementById('chart-container');
+            const macdChartContainer = document.getElementById('macd-chart-container');
+            const mainChartArea = document.getElementById('main-chart-area');
             const headerSymbol = document.getElementById('header-symbol');
             const selectedTimeframeDisplay = document.getElementById('selected-timeframe-display');
             
             let currentSymbol = 'BTCUSDT';
             let currentTimeframe = '1d';
             let websocket;
-            let candleSeries;
+
+            // Chart instances and series
+            let chart, candleSeries;
+            let macdChart, macdLineSeries, signalLineSeries, histogramSeries;
+            let isMacdVisible = false;
+
             const dataCache = {};
             const pendingFetches = {};
-
             let coins = [];
             const DEFAULT_COINS = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT'];
             let allBinanceSymbols = [];
-
             const TIMEFRAMES = [
                 { interval: '5m', label: '5 dk' }, { interval: '15m', label: '15 dk' },
                 { interval: '30m', label: '30 dk' }, { interval: '1h', label: '1 Saat' },
@@ -178,64 +199,12 @@
             function renderMobileCoinList() { /* ... unchanged ... */ const list = document.getElementById('coin-list-mobile'); list.innerHTML = ''; coins.forEach(symbol => { list.innerHTML += ` <a href="#" class="coin-item-mobile flex justify-between items-center w-full" data-symbol="${symbol}"> <span class="flex items-center text-sm"> ${symbol.replace('USDT','/USDT')} </span> <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="delete-coin-btn text-gray-500 hover:text-red-400" data-symbol="${symbol}"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> </a> `; }); list.innerHTML += ` <a href="#" id="add-coin-btn-mobile" class="flex items-center space-x-2 mt-4 text-green-400"> <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> <span>Ekle</span> </a> `; }
 
             // --- CHART & API LOGIC ---
-            const chart = LightweightCharts.createChart(chartContainer, { /* ... unchanged ... */ width: chartContainer.clientWidth, height: chartContainer.clientHeight, layout: { backgroundColor: '#ffffff', textColor: 'rgba(0, 0, 0, 0.9)' }, grid: { vertLines: { visible: false }, horzLines: { visible: false } }, crosshair: { mode: LightweightCharts.CrosshairMode.Normal }, rightPriceScale: { borderColor: '#D1D5DB' }, timeScale: { borderColor: '#D1D5DB', timeVisible: true, secondsVisible: false } });
-            candleSeries = chart.addCandlestickSeries({ /* ... unchanged ... */ upColor: '#22c55e', downColor: '#ef4444', borderDownColor: '#ef4444', borderUpColor: '#22c55e', wickDownColor: '#ef4444', wickUpColor: '#22c55e', priceLineVisible: false, });
-            
-            async function fetchAndCacheData(symbol, interval) {
-                const cacheKey = `${symbol}_${interval}`;
-                if (dataCache[cacheKey]) return dataCache[cacheKey];
-                if (pendingFetches[cacheKey]) return await pendingFetches[cacheKey];
-
-                const fetchPromise = (async () => {
-                    try {
-                        let allKlines = [], endTime = Date.now(), limit = 1000;
-                        const now = new Date();
-                        let startTime = 0;
-
-                        // Akıllı veri limiti: Kısa zaman aralıkları için daha az veri çek
-                        switch (interval) {
-                            case '5m': startTime = new Date(now.setDate(now.getDate() - 3)).getTime(); break;
-                            case '15m': startTime = new Date(now.setDate(now.getDate() - 7)).getTime(); break;
-                            case '30m': startTime = new Date(now.setDate(now.getDate() - 14)).getTime(); break;
-                            case '1h': startTime = new Date(now.setDate(now.getDate() - 30)).getTime(); break;
-                            case '4h': startTime = new Date(now.setDate(now.getDate() - 120)).getTime(); break;
-                            default: startTime = 0; // 1d ve 1M için limit yok, tüm geçmiş
-                        }
-
-                        while (true) {
-                            const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}&endTime=${endTime}`;
-                            const response = await fetch(url);
-                            if (!response.ok) throw new Error(`Binance API error: ${response.status}`);
-                            const klines = await response.json();
-                            if (klines.length === 0) break;
-                            allKlines = klines.concat(allKlines);
-                            const firstKlineTimestamp = klines[0][0];
-
-                            if (startTime > 0 && firstKlineTimestamp < startTime) {
-                                break;
-                            }
-                            
-                            endTime = firstKlineTimestamp - 1;
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                        }
-                        
-                        const finalKlines = startTime > 0 ? allKlines.filter(k => k[0] >= startTime) : allKlines;
-                        const formattedData = finalKlines.map(item => ({ time: item[0] / 1000, open: parseFloat(item[1]), high: parseFloat(item[2]), low: parseFloat(item[3]), close: parseFloat(item[4]), }));
-                        
-                        if (formattedData.length > 0) dataCache[cacheKey] = formattedData;
-                        return formattedData;
-                    } catch (error) {
-                        console.error(`Veri çekme hatası for ${cacheKey}:`, error);
-                        return [];
-                    } finally {
-                        delete pendingFetches[cacheKey];
-                    }
-                })();
-                
-                pendingFetches[cacheKey] = fetchPromise;
-                return await fetchPromise;
+             function createMainChart() {
+                chart = LightweightCharts.createChart(chartContainer, { width: chartContainer.clientWidth, height: chartContainer.clientHeight, layout: { backgroundColor: '#ffffff', textColor: 'rgba(0, 0, 0, 0.9)' }, grid: { vertLines: { visible: false }, horzLines: { visible: false } }, crosshair: { mode: LightweightCharts.CrosshairMode.Normal }, rightPriceScale: { borderColor: '#D1D5DB' }, timeScale: { borderColor: '#D1D5DB', timeVisible: true, secondsVisible: false } });
+                candleSeries = chart.addCandlestickSeries({ upColor: '#22c55e', downColor: '#ef4444', borderDownColor: '#ef4444', borderUpColor: '#22c55e', wickDownColor: '#ef4444', wickUpColor: '#22c55e', priceLineVisible: false });
             }
-
+            
+            async function fetchAndCacheData(symbol, interval) { /* ... unchanged ... */ const cacheKey = `${symbol}_${interval}`; if (dataCache[cacheKey]) return dataCache[cacheKey]; if (pendingFetches[cacheKey]) return await pendingFetches[cacheKey]; const fetchPromise = (async () => { try { let allKlines = [], endTime = Date.now(), limit = 1000; const now = new Date(); let startTime = 0; switch (interval) { case '5m': startTime = new Date(now.setDate(now.getDate() - 3)).getTime(); break; case '15m': startTime = new Date(now.setDate(now.getDate() - 7)).getTime(); break; case '30m': startTime = new Date(now.setDate(now.getDate() - 14)).getTime(); break; case '1h': startTime = new Date(now.setDate(now.getDate() - 30)).getTime(); break; case '4h': startTime = new Date(now.setDate(now.getDate() - 120)).getTime(); break; default: startTime = 0; } while (true) { const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}&endTime=${endTime}`; const response = await fetch(url); if (!response.ok) throw new Error(`Binance API error: ${response.status}`); const klines = await response.json(); if (klines.length === 0) break; allKlines = klines.concat(allKlines); const firstKlineTimestamp = klines[0][0]; if (startTime > 0 && firstKlineTimestamp < startTime) { break; } endTime = firstKlineTimestamp - 1; await new Promise(resolve => setTimeout(resolve, 100)); } const finalKlines = startTime > 0 ? allKlines.filter(k => k[0] >= startTime) : allKlines; const formattedData = finalKlines.map(item => ({ time: item[0] / 1000, open: parseFloat(item[1]), high: parseFloat(item[2]), low: parseFloat(item[3]), close: parseFloat(item[4]), })); if (formattedData.length > 0) dataCache[cacheKey] = formattedData; return formattedData; } catch (error) { console.error(`Veri çekme hatası for ${cacheKey}:`, error); return []; } finally { delete pendingFetches[cacheKey]; } })(); pendingFetches[cacheKey] = fetchPromise; return await fetchPromise; }
             async function getHistoricalData(symbol, interval) { /* ... unchanged ... */ const dataFromCache = dataCache[`${symbol}_${interval}`]; if (dataFromCache) { candleSeries.setData(dataFromCache); return dataFromCache; } const data = await fetchAndCacheData(symbol, interval); candleSeries.setData(data); return data; }
             function preFetchDataForSymbol(symbol) { const timeframes = TIMEFRAMES.map(tf => tf.interval); timeframes.forEach(tf => { fetchAndCacheData(symbol, tf); }); }
             function subscribeToStream(symbol, interval) { /* ... unchanged ... */ if (websocket) { websocket.onopen = null; websocket.onmessage = null; websocket.onerror = null; websocket.onclose = null; if (websocket.readyState === WebSocket.OPEN || websocket.readyState === WebSocket.CONNECTING) { websocket.close(); } } const wsUrl = `wss://stream.binance.com/ws/${symbol.toLowerCase()}@kline_${interval}`; websocket = new WebSocket(wsUrl); websocket.onopen = () => { console.log(`WebSocket bağlantısı başarılı: ${symbol}`); }; websocket.onmessage = (event) => { const message = JSON.parse(event.data); const kline = message.k; candleSeries.update({ time: kline.t / 1000, open: parseFloat(kline.o), high: parseFloat(kline.h), low: parseFloat(kline.l), close: parseFloat(kline.c), }); }; websocket.onerror = (error) => { console.error(`WebSocket Hatası for ${symbol}:`, error); }; websocket.onclose = (event) => { if (!event.wasClean) { console.warn(`WebSocket bağlantısı beklenmedik şekilde kesildi: ${symbol}`); } }; }
@@ -253,6 +222,7 @@
                     try {
                         const data = await getHistoricalData(currentSymbol, currentTimeframe);
                         subscribeToStream(currentSymbol, currentTimeframe);
+                        if (isMacdVisible) { updateMacdIndicator(data); }
                         
                         if (isNewCoin && data && data.length > 0) {
                             const dataSize = data.length;
@@ -263,13 +233,122 @@
                         } else if (isNewCoin) {
                              chart.timeScale().fitContent();
                         }
-                        // When changing timeframe (isNewCoin is false), do not change the zoom/scroll position.
 
                     } catch (error) {
                         console.error("Grafik güncellenirken hata oluştu:", error);
                     }
                 }, 0);
             }
+
+             // --- INDICATOR LOGIC ---
+
+            function calculateEMA(data, period) {
+                const k = 2 / (period + 1);
+                let emaArray = [{ time: data[0].time, value: data[0].close }];
+                for (let i = 1; i < data.length; i++) {
+                    const value = data[i].close * k + emaArray[i - 1].value * (1 - k);
+                    emaArray.push({ time: data[i].time, value });
+                }
+                return emaArray;
+            }
+
+            function calculateSMA(data, period) {
+                let smaArray = [];
+                for (let i = period - 1; i < data.length; i++) {
+                    let sum = 0;
+                    for (let j = 0; j < period; j++) {
+                        sum += data[i - j].value;
+                    }
+                    smaArray.push({ time: data[i].time, value: sum / period });
+                }
+                return smaArray;
+            }
+
+            function calculateMACD(data, fast, slow, signal) {
+                const fastEma = calculateEMA(data, fast);
+                const slowEma = calculateEMA(data, slow);
+                
+                const macdLine = slowEma.map((d, i) => ({
+                    time: d.time,
+                    value: fastEma[i].value - d.value
+                }));
+
+                const signalLine = calculateSMA(macdLine, signal);
+                
+                const histogram = signalLine.map((d, i) => {
+                    const macdValue = macdLine.find(m => m.time === d.time).value;
+                    const value = macdValue - d.value;
+                    return { time: d.time, value };
+                });
+                
+                // Renk mantığı
+                histogram.forEach((d, i) => {
+                    if (i > 0) {
+                        const prev = histogram[i-1];
+                        if(d.value > 0) {
+                           d.color = d.value > prev.value ? '#26A69A' : '#B2DFDB';
+                        } else {
+                           d.color = d.value < prev.value ? '#FF5252' : '#FFCDD2';
+                        }
+                    } else {
+                        d.color = d.value > 0 ? '#26A69A' : '#FF5252';
+                    }
+                });
+
+                return { macdLine, signalLine, histogram };
+            }
+
+            function updateMacdIndicator(data) {
+                if (!isMacdVisible || !data || data.length === 0) return;
+                const macdData = calculateMACD(data, 12, 26, 9);
+                macdLineSeries.setData(macdData.macdLine);
+                signalLineSeries.setData(macdData.signalLine);
+                histogramSeries.setData(macdData.histogram);
+            }
+
+            function toggleMACD() {
+                isMacdVisible = !isMacdVisible;
+                const macdBtn = document.getElementById('macd-indicator-btn');
+
+                if(isMacdVisible) {
+                    mainChartArea.style.height = '70%';
+                    macdChartContainer.style.height = '30%';
+                    macdBtn.classList.add('btn-active');
+
+                    if(!macdChart) {
+                        macdChart = LightweightCharts.createChart(macdChartContainer, {
+                            width: macdChartContainer.clientWidth, height: macdChartContainer.clientHeight,
+                            layout: { backgroundColor: '#ffffff', textColor: 'rgba(0, 0, 0, 0.9)' },
+                            grid: { vertLines: { color: '#F0F0F0' }, horzLines: { color: '#F0F0F0' } },
+                            timeScale: { visible: false }
+                        });
+                        macdLineSeries = macdChart.addLineSeries({ color: '#2962FF', lineWidth: 2 });
+                        signalLineSeries = macdChart.addLineSeries({ color: '#FF6D00', lineWidth: 2 });
+                        histogramSeries = macdChart.addHistogramSeries({ color: '#26a69a' });
+                        
+                        chart.timeScale().subscribeVisibleLogicalRangeChange(range => {
+                            macdChart.timeScale().setVisibleLogicalRange(range);
+                        });
+                         macdChart.timeScale().subscribeVisibleLogicalRangeChange(range => {
+                            chart.timeScale().setVisibleLogicalRange(range);
+                        });
+                    }
+                    const currentData = dataCache[`${currentSymbol}_${currentTimeframe}`];
+                    updateMacdIndicator(currentData);
+
+                } else {
+                    mainChartArea.style.height = '100%';
+                    macdChartContainer.style.height = '0%';
+                    macdBtn.classList.remove('btn-active');
+                }
+                
+                // Resize both charts
+                chart.resize(chartContainer.clientWidth, chartContainer.clientHeight);
+                if (macdChart) {
+                    macdChart.resize(macdChartContainer.clientWidth, macdChartContainer.clientHeight);
+                }
+            }
+
 
             // --- EVENT HANDLERS & LISTENERS ---
             function selectTimeframe(interval) {
@@ -291,8 +370,26 @@
             document.getElementById('coins-dropdown-btn').addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('coin-list').classList.toggle('show'); });
             document.getElementById('coin-list').addEventListener('click', (e) => { e.preventDefault(); const target = e.target; const deleteBtn = target.closest('.delete-coin-btn'); const addBtn = target.closest('#add-coin-btn'); const coinItem = target.closest('.coin-item'); if (deleteBtn) { e.stopPropagation(); deleteCoinHandler(deleteBtn.dataset.symbol); } else if (addBtn) { openAddCoinModal(); document.getElementById('coin-list').classList.remove('show'); } else if (coinItem) { selectCoin(coinItem.dataset.symbol); document.getElementById('coin-list').classList.remove('show'); } });
 
+            // Gösterge Dropdown
+            document.getElementById('indicator-dropdown-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('indicator-list').classList.toggle('show');
+            });
+            document.getElementById('macd-indicator-btn').addEventListener('click', () => {
+                toggleMACD();
+                document.getElementById('indicator-list').classList.remove('show');
+            });
+
+
             // Açık dropdown'ları kapatmak için genel click listener
-            window.addEventListener('click', (e) => { const coinList = document.getElementById('coin-list'); if (!e.target.closest('#coins-dropdown-btn') && coinList.classList.contains('show')) { coinList.classList.remove('show'); } const timeframeList = document.getElementById('timeframe-list-header'); if (!e.target.closest('#timeframe-dropdown-btn') && timeframeList.classList.contains('show')) { timeframeList.classList.remove('show'); } });
+            window.addEventListener('click', (e) => { 
+                const coinList = document.getElementById('coin-list'); 
+                if (!e.target.closest('#coins-dropdown-btn') && coinList.classList.contains('show')) { coinList.classList.remove('show'); } 
+                const timeframeList = document.getElementById('timeframe-list-header'); 
+                if (!e.target.closest('#timeframe-dropdown-btn') && timeframeList.classList.contains('show')) { timeframeList.classList.remove('show'); }
+                const indicatorList = document.getElementById('indicator-list');
+                if (!e.target.closest('#indicator-dropdown-btn') && indicatorList.classList.contains('show')) { indicatorList.classList.remove('show'); }
+            });
 
             // --- MOBİL MENU MANTIĞI ---
             const mobileMenu = document.getElementById('mobile-menu');
@@ -315,20 +412,27 @@
             modalSearchInput.oninput = () => renderModalCoinList(modalSearchInput.value);
             
             // Pencere yeniden boyutlandırıldığında grafiği ayarla
-            const resizeObserver = new ResizeObserver(entries => { const { width, height } = entries[0].contentRect; chart.resize(width, height); });
-            resizeObserver.observe(chartContainer);
+            const resizeObserver = new ResizeObserver(entries => { 
+                 const { width, height } = chartContainer.getBoundingClientRect();
+                 chart.resize(width, height);
+                 if (isMacdVisible) {
+                     const { width: macdWidth, height: macdHeight } = macdChartContainer.getBoundingClientRect();
+                     macdChart.resize(macdWidth, macdHeight);
+                 }
+            });
+            resizeObserver.observe(document.body);
             
             // --- İLK YÜKLEME ---
             async function start() {
                 loadCoins();
                 saveCoins();
+                createMainChart();
                 renderTimeframeButtons();
                 renderDesktopCoinList();
                 renderMobileCoinList();
 
                 if (coins.length > 0) currentSymbol = coins[0];
                 
-                // Set initial active button
                 document.querySelectorAll('.timeframe-btn, .timeframe-btn-mobile').forEach(btn => {
                     btn.classList.toggle('btn-active', btn.dataset.interval === currentTimeframe);
                 });
