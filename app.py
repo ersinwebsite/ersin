@@ -3,13 +3,13 @@ import cv2
 import numpy as np
 from PIL import Image
 
-# Sayfa Genişlik Ayarı
+# --- WEB SİTESİ ARAYÜZÜ ---
 st.set_page_config(page_title="Tabela En-Boy Ölçer", layout="centered")
 
 st.title("📐 Akıllı Tabela & En-Boy Ölçer")
-st.write("Telefonunuzdan kamerasını açıp fotoğraf çekin. Sistem objeleri otomatik tespit edip oranlarını çıkaracaktır.")
+st.write("Telefonunuzdan kamerayı açıp fotoğraf çekin. Sistem objeleri otomatik tespit edip oranlarını çıkaracaktır.")
 
-# Kamera Girişi (Telefon kamerasını tetikler)
+# Mobil cihazlarda arka kamerayı öncelikli olarak açması için kamera bileşeni
 img_file = st.camera_input("Kamera", label_visibility="collapsed")
 
 if img_file is not None:
@@ -18,7 +18,7 @@ if img_file is not None:
     img_np = np.array(image)
     original_img = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
     
-    # Görüntü işleme (Sınır çizgilerini belirginleştirme)
+    # Görüntü işleme adımları (Sınırları belirginleştirme)
     gray = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     edged = cv2.Canny(blurred, 30, 150)
@@ -64,6 +64,7 @@ if img_file is not None:
             st.info(f"💡 Seçtiğiniz objenin genişliği, yüksekliğinin tam **{aspect_ratio:.2f}** katıdır.")
             
         else:
+            # Henüz bir obje seçilmediyse tüm objeleri kırmızı kutu ve numaralarla ekranda göster
             all_objs_img = original_img.copy()
             for i, c in enumerate(valid_contours):
                 x, y, w, h = cv2.boundingRect(c)
