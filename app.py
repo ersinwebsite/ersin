@@ -7,7 +7,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Tüm Streamlit logolarını, menülerini, alt bilgileri ve boşlukları tamamen sıfırlayan CSS
+# Tüm Streamlit arayüz elemanlarını, logolarını ve boşlukları tamamen gizleyen CSS
 st.markdown("""
     <style>
         #MainMenu {visibility: hidden; display: none !important;}
@@ -47,6 +47,7 @@ html_code = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Tabela Ölçer</title>
+    <!-- Lucide Ikon Kütüphanesi -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         * {
@@ -79,7 +80,7 @@ html_code = """
             justify-content: space-between;
         }
 
-        /* KAMERA TASARIMI */
+        /* KAMERA EKRANI */
         #camera-container {
             position: relative;
             width: 100%;
@@ -188,7 +189,7 @@ html_code = """
             z-index: 10;
         }
 
-        /* Şık Pimler */
+        /* Pimler */
         .pin {
             position: absolute;
             width: 40px;
@@ -326,7 +327,7 @@ html_code = """
     <div id="measure-screen" class="screen">
         <div id="measure-container">
             
-            <!-- Hassas Kalibrasyon / Mesafe Sürgüsü -->
+            <!-- Hassas Kalibrasyon / Masafe Sürgüsü -->
             <div class="calibration-card">
                 <div class="calibration-title">Mesafe / Hassas Ölçü Ayarı</div>
                 <div class="slider-wrapper">
@@ -537,6 +538,28 @@ html_code = """
                 x = Math.max(0, Math.min(x, sourceCanvas.width));
                 y = Math.max(0, Math.min(y, sourceCanvas.height));
                 
+                pinCoords[activePin].x = x;
+                pinCoords[activePin].y = y;
+                
+                updateUI();
+            });
+            
+            pin.addEventListener('pointerup', (e) => {
+                if (activePin) {
+                    pin.releasePointerCapture(e.pointerId);
+                    activePin = null;
+                }
+            });
+
+            pin.addEventListener('pointercancel', (e) => {
+                if (activePin) {
+                    pin.releasePointerCapture(e.pointerId);
+                    activePin = null;
+                }
+            });
+        });
+
+        // Kaydet Butonuna Basıldığında Görseli Birleştirip Paylaş / İndir
         document.getElementById('save-btn').addEventListener('click', async () => {
             const outCanvas = document.createElement('canvas');
             outCanvas.width = capturedImage.width;
@@ -668,4 +691,5 @@ html_code = """
 </html>
 """
 
+# HTML Bileşenini Render Et
 components.html(html_code, height=900, scrolling=False)
