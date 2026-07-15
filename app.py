@@ -8,8 +8,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Bu CSS blokları, Streamlit'in kendi başlık, menü ve boşluklarını tamamen kaldırarak
-# uygulamaya gerçek bir yerel (native) mobil uygulama havası verir.
+# Streamlit başlık, menü ve boşluklarını tamamen kaldırarak gerçek mobil uygulama görünümü sunar.
 st.markdown("""
     <style>
         #MainMenu {visibility: hidden;}
@@ -39,17 +38,16 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# OpenCV.js CDN üzerinden yüklenerek tüm perspektif düzeltme ve görüntü işleme
-# işlemleri doğrudan kullanıcının telefonunda (sıfır gecikme ile) yapılır.
+# Tüm kamera ve canlı ölçüm arayüzünü barındıran HTML kodu
 html_code = """
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Tabela Ölçer PRO</title>
-    <!-- OpenCV.js kütüphanesi -->
-    <script src="https://docs.opencv.org/4.5.4/opencv.js" type="text/javascript"></script>
+    <title>Tabela Ölçer</title>
+    <!-- Lucide Icons (Tasarım ikonları için) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -101,8 +99,8 @@ html_code = """
             height: 100%;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            padding: 20px;
+            justify-content: flex-end;
+            padding: 40px 20px;
             pointer-events: none;
         }
         .shutter-container {
@@ -110,28 +108,27 @@ html_code = """
             display: flex;
             justify-content: center;
             align-items: center;
-            padding-bottom: 40px;
             pointer-events: auto;
         }
         .shutter-btn {
-            width: 80px;
-            height: 80px;
+            width: 84px;
+            height: 84px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2);
             border: 4px solid #fff;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            box-shadow: 0 0 20px rgba(0,0,0,0.6);
             transition: transform 0.1s ease;
         }
         .shutter-btn:active {
             transform: scale(0.9);
         }
         .shutter-inner {
-            width: 62px;
-            height: 62px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
             background: #ffcc00;
             display: flex;
@@ -142,19 +139,20 @@ html_code = """
             color: #000;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
         }
 
-        /* 2. MANUEL ÇİZİM / KÖŞE AYARLAMA EKRANI */
-        #crop-container {
+        /* 2. ÖLÇÜM / PİM EKRANI */
+        #measure-container {
             position: relative;
             width: 100%;
             height: 100%;
-            background: #111;
+            background: #000;
         }
         #canvas-wrap {
             position: relative;
             width: 100%;
-            height: calc(100% - 100px);
+            height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -162,7 +160,6 @@ html_code = """
         #source-canvas {
             max-width: 100%;
             max-height: 100%;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }
         #interactive-svg {
             position: absolute;
@@ -172,242 +169,151 @@ html_code = """
             height: 100%;
             pointer-events: none;
         }
+        
+        /* Ölçü Balonları */
+        .measure-badge {
+            position: absolute;
+            background: rgba(17, 17, 17, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: #ffd60a;
+            border: 1px solid rgba(255, 214, 10, 0.3);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 700;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            white-space: nowrap;
+        }
+
+        /* Şık Pimler */
         .pin {
             position: absolute;
-            width: 32px;
-            height: 32px;
-            background: rgba(255, 214, 10, 0.4);
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 214, 10, 0.35);
             border: 3px solid #ffd60a;
             border-radius: 50%;
             transform: translate(-50%, -50%);
             cursor: pointer;
             pointer-events: auto;
             touch-action: none;
-            box-shadow: 0 0 10px rgba(255, 214, 10, 0.8);
+            box-shadow: 0 0 15px rgba(255, 214, 10, 0.6);
             display: flex;
             justify-content: center;
             align-items: center;
         }
         .pin::after {
             content: '';
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             background: #fff;
             border-radius: 50%;
         }
-        .action-bar {
-            height: 100px;
-            background: rgba(0, 0, 0, 0.95);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 0 20px;
-            border-top: 1px solid #333;
-        }
-        .action-btn {
-            background: #333;
-            color: #fff;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 25px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .action-btn.primary {
-            background: #ffd60a;
-            color: #000;
-        }
-        .action-btn:active {
-            transform: scale(0.95);
-        }
-
-        /* 3. ÖLÇÜM VE SONUÇ EKRANI */
-        #result-container {
-            background: #000;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        .result-header {
-            padding: 20px;
-            text-align: center;
-            background: #111;
-            border-bottom: 1px solid #222;
-        }
-        .result-header h2 {
-            margin: 0;
-            font-size: 20px;
-            color: #ffd60a;
-        }
-        .result-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        #result-canvas {
-            max-width: 90%;
-            max-height: 40vh;
-            border-radius: 12px;
-            border: 2px solid #333;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            margin-bottom: 20px;
-        }
-        .control-panel {
-            width: 100%;
-            max-width: 400px;
-            background: #111;
-            padding: 20px;
-            border-radius: 16px;
-            border: 1px solid #222;
-        }
-        .input-group {
-            margin-bottom: 15px;
-        }
-        .input-group label {
-            display: block;
-            font-size: 13px;
-            color: #aaa;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .input-row {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        .input-field {
-            flex: 1;
-            background: #222;
-            border: 1px solid #333;
-            color: #fff;
-            padding: 12px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            outline: none;
-            text-align: center;
-        }
-        .input-field:focus {
-            border-color: #ffd60a;
-        }
-        .unit-label {
-            font-size: 16px;
-            font-weight: bold;
-            color: #ffd60a;
-        }
-        .ratio-card {
-            background: #222;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            margin-top: 15px;
-            border: 1px dashed #ffd60a;
-        }
-        .ratio-card span {
-            display: block;
-            font-size: 11px;
-            color: #aaa;
-            text-transform: uppercase;
-        }
-        .ratio-card strong {
-            font-size: 20px;
-            color: #fff;
-        }
         
-        /* BÜYÜTEÇ (MAGNIFIER) */
+        /* Büyüteç (Magnifier) */
         #magnifier {
             position: absolute;
-            width: 100px;
-            height: 100px;
+            width: 110px;
+            height: 110px;
             border-radius: 50%;
             border: 3px solid #ffd60a;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            box-shadow: 0 0 20px rgba(0,0,0,0.6);
             pointer-events: none;
             display: none;
             z-index: 1000;
             background-repeat: no-repeat;
             background-color: #000;
         }
+
+        /* Alt Aksiyon Butonları */
+        .action-overlay {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 30px;
+            pointer-events: none;
+        }
+        .btn-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+            transition: all 0.2s ease;
+        }
+        .btn-circle:active {
+            transform: scale(0.9);
+        }
+        .btn-circle.success {
+            background: #ffd60a;
+            color: #000;
+            border: none;
+        }
     </style>
 </head>
 <body>
 
-    <!-- 1. KAMERA KATMANI -->
+    <!-- 1. KAMERA EKRANI -->
     <div id="camera-screen" class="screen active">
         <div id="camera-container">
             <video id="video" autoplay playsinline muted></video>
             <div class="camera-overlay">
-                <div></div> <!-- Boş spacer -->
                 <div class="shutter-container">
                     <div class="shutter-btn" id="capture-btn">
-                        <div class="shutter-inner">Çek</div>
+                        <div class="shutter-inner">Tabela Çek</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 2. MANUEL AYAR / ÇİZİM KATMANI -->
-    <div id="crop-screen" class="screen">
-        <div id="crop-container">
+    <!-- 2. ÖLÇÜM / AYAR EKRANI -->
+    <div id="measure-screen" class="screen">
+        <div id="measure-container">
             <div id="canvas-wrap">
                 <canvas id="source-canvas"></canvas>
                 <svg id="interactive-svg">
-                    <polygon id="poly-mask" fill="rgba(255, 214, 10, 0.2)" stroke="#ffd60a" stroke-width="3" />
+                    <!-- Bağlantı Çizgileri -->
+                    <line id="line-top" stroke="#ffd60a" stroke-width="3" stroke-dasharray="5,5" />
+                    <line id="line-right" stroke="#ffd60a" stroke-width="3" stroke-dasharray="5,5" />
+                    <line id="line-bottom" stroke="rgba(255,214,10,0.2)" stroke-width="1.5" stroke-dasharray="5,5" />
+                    <line id="line-left" stroke="rgba(255,214,10,0.2)" stroke-width="1.5" stroke-dasharray="5,5" />
                 </svg>
-                <!-- Draggable Pimler -->
-                <div class="pin" id="pin-tl" data-id="tl"></div>
-                <div class="pin" id="pin-tr" data-id="tr"></div>
-                <div class="pin" id="pin-br" data-id="br"></div>
-                <div class="pin" id="pin-bl" data-id="bl"></div>
-            </div>
-            <div id="magnifier"></div>
-            <div class="action-bar">
-                <button class="action-btn" id="back-to-cam">Vazgeç</button>
-                <button class="action-btn primary" id="warp-btn">Düzleştir & Ölç</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3. GERÇEK ÖLÇÜ & METRE KATMANI -->
-    <div id="result-screen" class="screen">
-        <div class="result-header">
-            <h2>Düzleştirilmiş Tabela Ölçümü</h2>
-        </div>
-        <div class="result-content">
-            <canvas id="result-canvas"></canvas>
-            
-            <div class="control-panel">
-                <div class="input-group">
-                    <label>Gerçek Genişlik Girin (Metre Kalibrasyonu)</label>
-                    <div class="input-row">
-                        <input type="number" id="real-width" class="input-field" placeholder="Örn: 200" step="any">
-                        <span class="unit-label">cm</span>
-                    </div>
-                </div>
-                <div class="input-group">
-                    <label>Hesaplanan Yükseklik</label>
-                    <div class="input-row">
-                        <input type="text" id="calculated-height" class="input-field" readonly style="background: #1a1a1a; color: #ffd60a;">
-                        <span class="unit-label">cm</span>
-                    </div>
-                </div>
                 
-                <div class="ratio-card">
-                    <span>Doğal En-Boy Oranı</span>
-                    <strong id="ratio-text">1 : 1.00</strong>
-                </div>
+                <!-- Ölçüm Etiketleri (Sadece Üst ve Sağ Kenar İçin) -->
+                <div class="measure-badge" id="badge-top">0 cm</div>
+                <div class="measure-badge" id="badge-right">0 cm</div>
+
+                <!-- 2 Adet Sürüklenebilir Pim (Sol-Üst ve Sağ-Alt) -->
+                <div class="pin" id="pin-tl" data-id="tl"></div>
+                <div class="pin" id="pin-br" data-id="br"></div>
             </div>
-        </div>
-        <div class="action-bar">
-            <button class="action-btn primary" id="reset-btn" style="width: 100%;">Yeni Tabela Çek</button>
+            
+            <div id="magnifier"></div>
+            
+            <!-- Alt Butonlar -->
+            <div class="action-overlay">
+                <button class="btn-circle" id="back-to-cam" title="Geri Dön">
+                    <i data-lucide="arrow-left" style="width: 26px; height: 26px;"></i>
+                </button>
+                <button class="btn-circle success" id="save-btn" title="Fotoğraflara Kaydet">
+                    <i data-lucide="download" style="width: 26px; height: 26px;"></i>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -415,53 +321,54 @@ html_code = """
         const video = document.getElementById('video');
         const captureBtn = document.getElementById('capture-btn');
         const sourceCanvas = document.getElementById('source-canvas');
-        const resultCanvas = document.getElementById('result-canvas');
-        const polyMask = document.getElementById('poly-mask');
         const magnifier = document.getElementById('magnifier');
         
-        // Ekranlar
+        // Ekran Katmanları
         const camScreen = document.getElementById('camera-screen');
-        const cropScreen = document.getElementById('crop-screen');
-        const resultScreen = document.getElementById('result-screen');
+        const measureScreen = document.getElementById('measure-screen');
         
-        // Pimler ve Koordinatları
+        // Pimler ve Çizgiler
         const pins = {
             tl: document.getElementById('pin-tl'),
-            tr: document.getElementById('pin-tr'),
-            br: document.getElementById('pin-br'),
-            bl: document.getElementById('pin-bl')
+            br: document.getElementById('pin-br')
         };
         
+        const lineTop = document.getElementById('line-top');
+        const lineRight = document.getElementById('line-right');
+        const lineBottom = document.getElementById('line-bottom');
+        const lineLeft = document.getElementById('line-left');
+        
+        const badgeTop = document.getElementById('badge-top');
+        const badgeRight = document.getElementById('badge-right');
+        
         let pinCoords = {
-            tl: {x: 0, y: 0},
-            tr: {x: 0, y: 0},
-            br: {x: 0, y: 0},
-            bl: {x: 0, y: 0}
+            tl: { x: 0, y: 0 },
+            br: { x: 0, y: 0 }
         };
 
         let capturedImage = new Image();
-        let warpAspectRatio = 1.0;
 
+        // Kamerayı Başlat (Arka Kamera Öncelikli)
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: { exact: "environment" } }, // Arka kamera öncelikli
+                    video: { facingMode: { exact: "environment" } },
                     audio: false
                 });
                 video.srcObject = stream;
             } catch (err) {
-                // Eğer arka kamera bulunamazsa varsayılan kamerayı aç
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
                     video.srcObject = stream;
                 } catch (e) {
-                    alert("Kameraya erişilemedi: " + e.message);
+                    console.error("Kameraya erişilemedi: " + e.message);
                 }
             }
         }
 
         startCamera();
 
+        // Fotoğrafı Çek ve Kaydet
         captureBtn.addEventListener('click', () => {
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = video.videoWidth;
@@ -471,15 +378,15 @@ html_code = """
             
             capturedImage.src = tempCanvas.toDataURL('image/jpeg');
             capturedImage.onload = () => {
-                showCropScreen();
+                showMeasureScreen();
             };
         });
 
-        function showCropScreen() {
+        // Ölçüm Ekranını ve Pim Başlangıç Konumlarını Kur
+        function showMeasureScreen() {
             camScreen.classList.remove('active');
-            cropScreen.classList.add('active');
+            measureScreen.classList.add('active');
             
-            // Canvas boyutlarını belirle
             const wrap = document.getElementById('canvas-wrap');
             const maxWidth = wrap.clientWidth;
             const maxHeight = wrap.clientHeight;
@@ -494,35 +401,70 @@ html_code = """
             const ctx = sourceCanvas.getContext('2d');
             ctx.drawImage(capturedImage, 0, 0, sourceCanvas.width, sourceCanvas.height);
             
-            // Başlangıç pim koordinatlarını ata (Ortada bir dikdörtgen)
             const cw = sourceCanvas.width;
             const ch = sourceCanvas.height;
             
-            pinCoords.tl = { x: cw * 0.2, y: ch * 0.2 };
-            pinCoords.tr = { x: cw * 0.8, y: ch * 0.2 };
-            pinCoords.br = { x: cw * 0.8, y: ch * 0.8 };
-            pinCoords.bl = { x: cw * 0.2, y: ch * 0.8 };
+            // Başlangıçta ekranın ortasında bir ölçüm karesi oluştur
+            pinCoords.tl = { x: cw * 0.25, y: ch * 0.35 };
+            pinCoords.br = { x: cw * 0.75, y: ch * 0.65 };
             
             updateUI();
         }
 
+        // Pimlerin Konumlarına Göre Çizgileri, Ölçü Balonlarını ve cm Değerlerini Hesapla
         function updateUI() {
-            // Pim konumlarını güncelle
-            for (let key in pins) {
-                pins[key].style.left = `${pinCoords[key].x + sourceCanvas.offsetLeft}px`;
-                pins[key].style.top = `${pinCoords[key].y + sourceCanvas.offsetTop}px`;
-            }
+            const canvasOffsetLeft = sourceCanvas.offsetLeft;
+            const canvasOffsetTop = sourceCanvas.offsetTop;
+
+            // Pimleri yerleştir
+            pins.tl.style.left = `${pinCoords.tl.x + canvasOffsetLeft}px`;
+            pins.tl.style.top = `${pinCoords.tl.y + canvasOffsetTop}px`;
             
-            // Maske poligonunu güncelle
-            const pointsStr = `
-                ${pinCoords.tl.x + sourceCanvas.offsetLeft},${pinCoords.tl.y + sourceCanvas.offsetTop}
-                ${pinCoords.tr.x + sourceCanvas.offsetLeft},${pinCoords.tr.y + sourceCanvas.offsetTop}
-                ${pinCoords.br.x + sourceCanvas.offsetLeft},${pinCoords.br.y + sourceCanvas.offsetTop}
-                ${pinCoords.bl.x + sourceCanvas.offsetLeft},${pinCoords.bl.y + sourceCanvas.offsetTop}
-            `;
-            polyMask.setAttribute('points', pointsStr);
+            pins.br.style.left = `${pinCoords.br.x + canvasOffsetLeft}px`;
+            pins.br.style.top = `${pinCoords.br.y + canvasOffsetTop}px`;
+
+            // Diğer iki sanal köşeyi hesapla (Mükemmel dikdörtgen için)
+            const tr = { x: pinCoords.br.x + canvasOffsetLeft, y: pinCoords.tl.y + canvasOffsetTop };
+            const bl = { x: pinCoords.tl.x + canvasOffsetLeft, y: pinCoords.br.y + canvasOffsetTop };
+            const tl = { x: pinCoords.tl.x + canvasOffsetLeft, y: pinCoords.tl.y + canvasOffsetTop };
+            const br = { x: pinCoords.br.x + canvasOffsetLeft, y: pinCoords.br.y + canvasOffsetTop };
+
+            // Çizgileri güncelle
+            lineTop.setAttribute('x1', tl.x); lineTop.setAttribute('y1', tl.y);
+            lineTop.setAttribute('x2', tr.x); lineTop.setAttribute('y2', tr.y);
+
+            lineRight.setAttribute('x1', tr.x); lineRight.setAttribute('y1', tr.y);
+            lineRight.setAttribute('x2', br.x); lineRight.setAttribute('y2', br.y);
+
+            lineBottom.setAttribute('x1', br.x); lineBottom.setAttribute('y1', br.y);
+            lineBottom.setAttribute('x2', bl.x); lineBottom.setAttribute('y2', bl.y);
+
+            lineLeft.setAttribute('x1', bl.x); lineLeft.setAttribute('y1', bl.y);
+            lineLeft.setAttribute('x2', tl.x); lineLeft.setAttribute('y2', tl.y);
+
+            // Akıllı Fiziksel Mesafe/cm Hesaplama Formülü
+            // Standart telefon kamerasının (1x) yaklaşık 60 derecelik görüş açısı (FOV) temel alınır.
+            // Karşıdan çekilen tabela mesafesinin ~2.2 metre (tipik tabela montaj mesafesi) olduğu varsayılır.
+            const horizontalFOV_CM = 254; // 2.2 metreden çekilen ekranın kapsadığı gerçek dünya genişliği (cm)
+            const scaleFactor = horizontalFOV_CM / sourceCanvas.width;
+
+            const widthPx = Math.abs(pinCoords.br.x - pinCoords.tl.x);
+            const heightPx = Math.abs(pinCoords.br.y - pinCoords.tl.y);
+
+            const widthCm = Math.round(widthPx * scaleFactor);
+            const heightCm = Math.round(heightPx * scaleFactor);
+
+            // Ölçü Balonlarını Konumlandır ve cm Yaz
+            badgeTop.style.left = `${(tl.x + tr.x) / 2}px`;
+            badgeTop.style.top = `${tl.y - 22}px`;
+            badgeTop.innerText = `${widthCm} cm`;
+
+            badgeRight.style.left = `${tr.x + 36}px`;
+            badgeRight.style.top = `${(tr.y + br.y) / 2}px`;
+            badgeRight.innerText = `${heightCm} cm`;
         }
 
+        // Sürükleme ve Dokunma Kontrolleri
         let activePin = null;
         
         document.querySelectorAll('.pin').forEach(pin => {
@@ -536,13 +478,11 @@ html_code = """
             pin.addEventListener('pointermove', (e) => {
                 if (!activePin) return;
                 
-                const wrap = document.getElementById('canvas-wrap');
                 const rect = sourceCanvas.getBoundingClientRect();
-                
                 let x = e.clientX - rect.left;
                 let y = e.clientY - rect.top;
                 
-                // Sınırlar dışına taşmayı engelle
+                // Canvas dışına taşmayı engelle
                 x = Math.max(0, Math.min(x, sourceCanvas.width));
                 y = Math.max(0, Math.min(y, sourceCanvas.height));
                 
@@ -563,114 +503,135 @@ html_code = """
             pin.addEventListener('pointercancel', stopDrag);
         });
 
+        // Büyüteç Görünümünü Güncelleme
         function updateMagnifier(e) {
             if (!activePin) return;
-            const rect = sourceCanvas.getBoundingClientRect();
             const px = pinCoords[activePin].x;
             const py = pinCoords[activePin].y;
             
-            // Büyüteç konumunu parmağın biraz üstünde konumlandır
-            magnifier.style.left = `${e.clientX - 50}px`;
+            magnifier.style.left = `${e.clientX - 55}px`;
             magnifier.style.top = `${e.clientY - 120}px`;
             
-            // Canvas üzerindeki kesiti büyütece yansıt
             const zoom = 2.5;
             magnifier.style.backgroundImage = `url(${sourceCanvas.toDataURL()})`;
             magnifier.style.backgroundSize = `${sourceCanvas.width * zoom}px ${sourceCanvas.height * zoom}px`;
-            magnifier.style.backgroundPosition = `-${(px * zoom) - 50}px -${(py * zoom) - 50}px`;
+            magnifier.style.backgroundPosition = `-${(px * zoom) - 55}px -${(py * zoom) - 55}px`;
         }
 
-        document.getElementById('warp-btn').addEventListener('click', () => {
-            if (typeof cv === 'undefined' || !cv.Mat) {
-                alert("Ölçüm sistemi yükleniyor, lütfen 1 saniye sonra tekrar deneyin.");
-                return;
-            }
+        // Görseli Ölçüleriyle Birlikte Galeriye Kaydetme
+        document.getElementById('save-btn').addEventListener('click', () => {
+            const outCanvas = document.createElement('canvas');
+            outCanvas.width = capturedImage.width;
+            outCanvas.height = capturedImage.height;
+            const ctx = outCanvas.getContext('2d');
             
-            // Kaynak görsel yükleme
-            let src = cv.imread(sourceCanvas);
-            let dst = new cv.Mat();
+            // 1. Orijinal fotoğrafı çiz
+            ctx.drawImage(capturedImage, 0, 0);
             
-            // Orijinal görsel üzerindeki gerçek koordinatları hesaplama (Ölçek çarpanına göre)
+            // Ölçek katsayıları
             const scaleX = capturedImage.width / sourceCanvas.width;
             const scaleY = capturedImage.height / sourceCanvas.height;
             
-            let srcCoords = [
-                pinCoords.tl.x * scaleX, pinCoords.tl.y * scaleY,
-                pinCoords.tr.x * scaleX, pinCoords.tr.y * scaleY,
-                pinCoords.br.x * scaleX, pinCoords.br.y * scaleY,
-                pinCoords.bl.x * scaleX, pinCoords.bl.y * scaleY
-            ];
+            const tl = { x: pinCoords.tl.x * scaleX, y: pinCoords.tl.y * scaleY };
+            const br = { x: pinCoords.br.x * scaleX, y: pinCoords.br.y * scaleY };
+            const tr = { x: br.x, y: tl.y };
+            const bl = { x: tl.x, y: br.y };
+
+            // 2. Ölçü Çizgilerini Çiz
+            ctx.strokeStyle = '#ffd60a';
+            ctx.lineWidth = Math.max(4, capturedImage.width * 0.005);
+            ctx.setLineDash([Math.max(10, capturedImage.width * 0.01), Math.max(10, capturedImage.width * 0.01)]);
             
-            // En-boy hesaplama ve gerçekçi hedef alan belirleme
-            let w1 = Math.hypot(srcCoords[2] - srcCoords[0], srcCoords[3] - srcCoords[1]);
-            let w2 = Math.hypot(srcCoords[6] - srcCoords[4], srcCoords[7] - srcCoords[5]);
-            let maxW = Math.max(w1, w2);
-            
-            let h1 = Math.hypot(srcCoords[4] - srcCoords[2], srcCoords[5] - srcCoords[3]);
-            let h2 = Math.hypot(srcCoords[6] - srcCoords[0], srcCoords[7] - srcCoords[1]);
-            let maxH = Math.max(h1, h2);
-            
-            // Doğal en-boy oranı
-            warpAspectRatio = maxW / maxH;
-            
-            let dstCoords = [
-                0, 0,
-                maxW, 0,
-                maxW, maxH,
-                0, maxH
-            ];
-            
-            let srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, srcCoords);
-            let dstPts = cv.matFromArray(4, 1, cv.CV_32FC2, dstCoords);
-            
-            // Perspektif dönüşüm matrisi
-            let M = cv.getPerspectiveTransform(srcPts, dstPts);
-            let dsize = new cv.Size(maxW, maxH);
-            
-            // Dönüşümü uygulama
-            cv.warpPerspective(src, dst, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
-            
-            // Sonucu ekrana basma
-            cv.imshow(resultCanvas, dst);
-            
-            // Belleği temizleme
-            src.delete(); dst.delete(); srcPts.delete(); dstPts.delete(); M.delete();
-            
-            // UI Güncelleme ve Sonuç Ekranına Geçiş
-            document.getElementById('ratio-text').innerText = `1 : ${warpAspectRatio.toFixed(2)}`;
-            document.getElementById('real-width').value = '';
-            document.getElementById('calculated-height').value = '';
-            
-            cropScreen.classList.remove('active');
-            resultScreen.classList.add('active');
+            // Üst ve Sağ kenar belirgin (Sarı), alt ve sol daha silik
+            ctx.beginPath();
+            ctx.moveTo(tl.x, tl.y);
+            ctx.lineTo(tr.x, tr.y);
+            ctx.lineTo(br.x, br.y);
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(255, 214, 10, 0.4)';
+            ctx.beginPath();
+            ctx.moveTo(br.x, br.y);
+            ctx.lineTo(bl.x, bl.y);
+            ctx.lineTo(tl.x, tl.y);
+            ctx.stroke();
+
+            // Ölçülerin Hesabı
+            const horizontalFOV_CM = 254;
+            const finalScale = horizontalFOV_CM / capturedImage.width;
+            const wCm = Math.round(Math.abs(br.x - tl.x) * finalScale);
+            const hCm = Math.round(Math.abs(br.y - tl.y) * finalScale);
+
+            // 3. Ölçü Etiketlerini Balon Olarak Çiz (iOS Ölçüm Tarzı)
+            const fontSize = Math.max(20, Math.round(capturedImage.width * 0.024));
+            ctx.font = `bold ${fontSize}px -apple-system, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.setLineDash([]); // Balonlar düz çizgiyle çizilmeli
+
+            // Üst Etiket
+            drawBadge(ctx, `${wCm} cm`, (tl.x + tr.x) / 2, tl.y - (fontSize * 1.2), fontSize);
+            // Sağ Etiket
+            drawBadge(ctx, `${hCm} cm`, tr.x + (fontSize * 1.8), (tr.y + br.y) / 2, fontSize);
+
+            // 4. İndirme Penceresini Tetikle
+            const link = document.createElement('a');
+            link.download = `Tabela_Olcum_${wCm}x${hCm}.jpg`;
+            link.href = outCanvas.toDataURL('image/jpeg', 0.95);
+            link.click();
         });
 
-        document.getElementById('real-width').addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            if (val > 0 && warpAspectRatio > 0) {
-                const calcHeight = val / warpAspectRatio;
-                document.getElementById('calculated-height').value = calcHeight.toFixed(1);
-            } else {
-                document.getElementById('calculated-height').value = '';
-            }
-        });
+        // Şık Balon Çizme Yardımcı Fonksiyonu
+        function drawBadge(ctx, text, x, y, fontSize) {
+            const paddingH = fontSize * 0.8;
+            const paddingV = fontSize * 0.4;
+            const textWidth = ctx.measureText(text).width;
+            const rectW = textWidth + (paddingH * 2);
+            const rectH = fontSize + (paddingV * 2);
+            
+            // Balon Arka Planı (Koyu, Yarı Saydam)
+            ctx.fillStyle = 'rgba(17, 17, 17, 0.9)';
+            roundRect(ctx, x - (rectW / 2), y - (rectH / 2), rectW, rectH, rectH / 2);
+            ctx.fill();
+            
+            // Balon Çerçevesi (İnce Sarı)
+            ctx.strokeStyle = 'rgba(255, 214, 10, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Balon Yazısı (Sarı)
+            ctx.fillStyle = '#ffd60a';
+            ctx.fillText(text, x, y);
+        }
 
-        // Vazgeç / Geri Dön Butonları
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        // Geri Dön / Vazgeç Butonu
         document.getElementById('back-to-cam').addEventListener('click', () => {
-            cropScreen.classList.remove('active');
-            camScreen.classList.add('active');
-        });
-
-        document.getElementById('reset-btn').addEventListener('click', () => {
-            resultScreen.classList.remove('active');
+            measureScreen.classList.remove('active');
             camScreen.classList.add('active');
         });
         
         window.addEventListener('resize', () => {
-            if (cropScreen.classList.contains('active')) {
-                showCropScreen();
+            if (measureScreen.classList.contains('active')) {
+                showMeasureScreen();
             }
         });
+
+        // İkonları Yükle
+        lucide.createIcons();
     </script>
 </body>
 </html>
