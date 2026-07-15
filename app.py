@@ -7,35 +7,58 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Tüm Streamlit arayüz elemanlarını, logolarını ve boşlukları tamamen gizleyen CSS
+# Tüm Streamlit logolarını, menülerini, Cloud rozetlerini ve linklerini TAMAMEN gizleyen/kapatan ultra agresif CSS
 st.markdown("""
     <style>
-        #MainMenu {visibility: hidden; display: none !important;}
-        header {visibility: hidden; display: none !important;}
-        footer {visibility: hidden; display: none !important;}
-        div[data-testid="stToolbar"] {visibility: hidden; display: none !important;}
-        div[data-testid="stDecoration"] {visibility: hidden; display: none !important;}
-        div[data-testid="stStatusWidget"] {visibility: hidden; display: none !important;}
+        /* Standart Streamlit elementlerini kaldır */
+        #MainMenu {visibility: hidden !important; display: none !important;}
+        header {visibility: hidden !important; display: none !important;}
+        footer {visibility: hidden !important; display: none !important;}
+        div[data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
+        div[data-testid="stDecoration"] {visibility: hidden !important; display: none !important;}
+        div[data-testid="stStatusWidget"] {visibility: hidden !important; display: none !important;}
+        
+        /* Streamlit Cloud Rozetlerini, "Viewer Badge" ve "Manage App" logolarını kaldır */
+        div[data-testid="stViewerBadge"] {visibility: hidden !important; display: none !important;}
+        .viewerBadge {visibility: hidden !important; display: none !important;}
+        [id*="connection-status"] {visibility: hidden !important; display: none !important;}
+        a[href*="streamlit.io"] {visibility: hidden !important; display: none !important;}
+        a[href*="streamlit"] {visibility: hidden !important; display: none !important;}
+        div[class*="viewerBadge"] {visibility: hidden !important; display: none !important;}
+        button[class*="viewerBadge"] {visibility: hidden !important; display: none !important;}
+        
+        /* Sayfa yapısındaki tüm boşlukları sıfırla */
         .block-container {
             padding-top: 0rem !important;
             padding-bottom: 0rem !important;
             padding-left: 0rem !important;
             padding-right: 0rem !important;
             max-width: 100% !important;
+            height: 100vh !important;
         }
+        
+        /* Bizim kamera iframe'imizi tam ekranın en üst katmanına (z-index) sabitle */
+        /* Bu sayede arkada kalabilecek hiçbir Streamlit öğesine asla erişilemez veya dokunulamaz */
         iframe {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
             width: 100vw !important;
             height: 100vh !important;
-            border: none;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
+            border: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            z-index: 999999 !important;
+            background-color: #000000 !important;
         }
+        
+        /* Parent gövdede hiçbir şekilde kaydırma çubuğu gösterme */
         body {
             background-color: #000000 !important;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
         }
     </style>
 """, unsafe_allow_html=True)
