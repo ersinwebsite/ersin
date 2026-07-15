@@ -1,19 +1,21 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# Sayfa yapılandırması - Tam ekran deneyimi için sidebar kapatılır ve geniş mod açılır
 st.set_page_config(
     page_title="Tabela Ölçer PRO",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Streamlit başlık, menü ve boşluklarını tamamen kaldırarak gerçek mobil uygulama görünümü sunar.
+# Tüm Streamlit logolarını, menülerini, alt bilgileri ve boşlukları tamamen sıfırlayan CSS
 st.markdown("""
     <style>
-        #MainMenu {visibility: hidden;}
-        header {visibility: hidden;}
-        footer {visibility: hidden;}
+        #MainMenu {visibility: hidden; display: none !important;}
+        header {visibility: hidden; display: none !important;}
+        footer {visibility: hidden; display: none !important;}
+        div[data-testid="stToolbar"] {visibility: hidden; display: none !important;}
+        div[data-testid="stDecoration"] {visibility: hidden; display: none !important;}
+        div[data-testid="stStatusWidget"] {visibility: hidden; display: none !important;}
         .block-container {
             padding-top: 0rem !important;
             padding-bottom: 0rem !important;
@@ -38,7 +40,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Tüm kamera ve canlı ölçüm arayüzünü barındıran HTML kodu
 html_code = """
 <!DOCTYPE html>
 <html lang="tr">
@@ -46,7 +47,6 @@ html_code = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Tabela Ölçer</title>
-    <!-- Lucide Icons (Tasarım ikonları için) -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         * {
@@ -65,7 +65,6 @@ html_code = """
             color: #fff;
         }
         
-        /* Ekran Katmanları */
         .screen {
             display: none;
             width: 100%;
@@ -80,7 +79,7 @@ html_code = """
             justify-content: space-between;
         }
 
-        /* 1. KAMERA EKRANI */
+        /* KAMERA TASARIMI */
         #camera-container {
             position: relative;
             width: 100%;
@@ -134,15 +133,15 @@ html_code = """
             display: flex;
             justify-content: center;
             align-items: center;
-            font-weight: bold;
-            font-size: 11px;
+            font-weight: 800;
+            font-size: 14px;
             color: #000;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
         }
 
-        /* 2. ÖLÇÜM / PİM EKRANI */
+        /* ÖLÇÜM / PİM EKRANI */
         #measure-container {
             position: relative;
             width: 100%;
@@ -173,59 +172,100 @@ html_code = """
         /* Ölçü Balonları */
         .measure-badge {
             position: absolute;
-            background: rgba(17, 17, 17, 0.85);
+            background: rgba(17, 17, 17, 0.9);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             color: #ffd60a;
-            border: 1px solid rgba(255, 214, 10, 0.3);
-            padding: 5px 12px;
+            border: 1.5px solid rgba(255, 214, 10, 0.6);
+            padding: 6px 14px;
             border-radius: 20px;
-            font-size: 14px;
-            font-weight: 700;
+            font-size: 15px;
+            font-weight: 800;
             pointer-events: none;
             transform: translate(-50%, -50%);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             white-space: nowrap;
+            z-index: 10;
         }
 
         /* Şık Pimler */
         .pin {
             position: absolute;
-            width: 36px;
-            height: 36px;
-            background: rgba(255, 214, 10, 0.35);
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 214, 10, 0.4);
             border: 3px solid #ffd60a;
             border-radius: 50%;
             transform: translate(-50%, -50%);
             cursor: pointer;
             pointer-events: auto;
             touch-action: none;
-            box-shadow: 0 0 15px rgba(255, 214, 10, 0.6);
+            box-shadow: 0 0 15px rgba(255, 214, 10, 0.8);
             display: flex;
             justify-content: center;
             align-items: center;
+            z-index: 20;
         }
         .pin::after {
             content: '';
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             background: #fff;
             border-radius: 50%;
         }
-        
-        /* Büyüteç (Magnifier) */
-        #magnifier {
+
+        /* Akıllı Kalibrasyon Sürgüsü */
+        .calibration-card {
             position: absolute;
-            width: 110px;
-            height: 110px;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(17, 17, 17, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 85%;
+            max-width: 340px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 30;
+            pointer-events: auto;
+        }
+        .calibration-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #ffd60a;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .slider-wrapper {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .modern-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.2);
+            outline: none;
+        }
+        .modern-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
-            border: 3px solid #ffd60a;
-            box-shadow: 0 0 20px rgba(0,0,0,0.6);
-            pointer-events: none;
-            display: none;
-            z-index: 1000;
-            background-repeat: no-repeat;
-            background-color: #000;
+            background: #ffd60a;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
 
         /* Alt Aksiyon Butonları */
@@ -237,6 +277,7 @@ html_code = """
             justify-content: space-between;
             padding: 0 30px;
             pointer-events: none;
+            z-index: 30;
         }
         .btn-circle {
             width: 60px;
@@ -274,7 +315,7 @@ html_code = """
             <div class="camera-overlay">
                 <div class="shutter-container">
                     <div class="shutter-btn" id="capture-btn">
-                        <div class="shutter-inner">Tabela Çek</div>
+                        <div class="shutter-inner">Çek</div>
                     </div>
                 </div>
             </div>
@@ -284,14 +325,25 @@ html_code = """
     <!-- 2. ÖLÇÜM / AYAR EKRANI -->
     <div id="measure-screen" class="screen">
         <div id="measure-container">
+            
+            <!-- Hassas Kalibrasyon / Mesafe Sürgüsü -->
+            <div class="calibration-card">
+                <div class="calibration-title">Mesafe / Hassas Ölçü Ayarı</div>
+                <div class="slider-wrapper">
+                    <i data-lucide="minus" style="width: 16px; height: 16px; color: #fff;"></i>
+                    <input type="range" id="calibration-slider" min="100" max="600" value="300" class="modern-slider">
+                    <i data-lucide="plus" style="width: 16px; height: 16px; color: #fff;"></i>
+                </div>
+            </div>
+
             <div id="canvas-wrap">
                 <canvas id="source-canvas"></canvas>
                 <svg id="interactive-svg">
-                    <!-- Bağlantı Çizgileri -->
-                    <line id="line-top" stroke="#ffd60a" stroke-width="3" stroke-dasharray="5,5" />
-                    <line id="line-right" stroke="#ffd60a" stroke-width="3" stroke-dasharray="5,5" />
-                    <line id="line-bottom" stroke="rgba(255,214,10,0.2)" stroke-width="1.5" stroke-dasharray="5,5" />
-                    <line id="line-left" stroke="rgba(255,214,10,0.2)" stroke-width="1.5" stroke-dasharray="5,5" />
+                    <!-- Bağlantı Çizgileri - 4 Tarafı da Aynı Belirginlikte Sarı -->
+                    <line id="line-top" stroke="#ffd60a" stroke-width="3" stroke-dasharray="6,6" />
+                    <line id="line-right" stroke="#ffd60a" stroke-width="3" stroke-dasharray="6,6" />
+                    <line id="line-bottom" stroke="#ffd60a" stroke-width="3" stroke-dasharray="6,6" />
+                    <line id="line-left" stroke="#ffd60a" stroke-width="3" stroke-dasharray="6,6" />
                 </svg>
                 
                 <!-- Ölçüm Etiketleri (Sadece Üst ve Sağ Kenar İçin) -->
@@ -303,14 +355,12 @@ html_code = """
                 <div class="pin" id="pin-br" data-id="br"></div>
             </div>
             
-            <div id="magnifier"></div>
-            
-            <!-- Alt Butonlar -->
+            <!-- Alt Aksiyon Butonları -->
             <div class="action-overlay">
                 <button class="btn-circle" id="back-to-cam" title="Geri Dön">
                     <i data-lucide="arrow-left" style="width: 26px; height: 26px;"></i>
                 </button>
-                <button class="btn-circle success" id="save-btn" title="Fotoğraflara Kaydet">
+                <button class="btn-circle success" id="save-btn" title="Kaydet">
                     <i data-lucide="download" style="width: 26px; height: 26px;"></i>
                 </button>
             </div>
@@ -321,7 +371,7 @@ html_code = """
         const video = document.getElementById('video');
         const captureBtn = document.getElementById('capture-btn');
         const sourceCanvas = document.getElementById('source-canvas');
-        const magnifier = document.getElementById('magnifier');
+        const calibrationSlider = document.getElementById('calibration-slider');
         
         // Ekran Katmanları
         const camScreen = document.getElementById('camera-screen');
@@ -368,7 +418,7 @@ html_code = """
 
         startCamera();
 
-        // Fotoğrafı Çek ve Kaydet
+        // Fotoğrafı Çek
         captureBtn.addEventListener('click', () => {
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = video.videoWidth;
@@ -404,14 +454,14 @@ html_code = """
             const cw = sourceCanvas.width;
             const ch = sourceCanvas.height;
             
-            // Başlangıçta ekranın ortasında bir ölçüm karesi oluştur
+            // Başlangıçta ekranın ortasında dikey/yatay dengeli pimler
             pinCoords.tl = { x: cw * 0.25, y: ch * 0.35 };
             pinCoords.br = { x: cw * 0.75, y: ch * 0.65 };
             
             updateUI();
         }
 
-        // Pimlerin Konumlarına Göre Çizgileri, Ölçü Balonlarını ve cm Değerlerini Hesapla
+        // Pimlerin Konumlarına Göre Çizgileri ve Ölçüleri Hesapla
         function updateUI() {
             const canvasOffsetLeft = sourceCanvas.offsetLeft;
             const canvasOffsetTop = sourceCanvas.offsetTop;
@@ -429,7 +479,7 @@ html_code = """
             const tl = { x: pinCoords.tl.x + canvasOffsetLeft, y: pinCoords.tl.y + canvasOffsetTop };
             const br = { x: pinCoords.br.x + canvasOffsetLeft, y: pinCoords.br.y + canvasOffsetTop };
 
-            // Çizgileri güncelle
+            // Çizgileri güncelle - Hepsi Sarı ve Net
             lineTop.setAttribute('x1', tl.x); lineTop.setAttribute('y1', tl.y);
             lineTop.setAttribute('x2', tr.x); lineTop.setAttribute('y2', tr.y);
 
@@ -443,26 +493,29 @@ html_code = """
             lineLeft.setAttribute('x2', tl.x); lineLeft.setAttribute('y2', tl.y);
 
             // Akıllı Fiziksel Mesafe/cm Hesaplama Formülü
-            // Standart telefon kamerasının (1x) yaklaşık 60 derecelik görüş açısı (FOV) temel alınır.
-            // Karşıdan çekilen tabela mesafesinin ~2.2 metre (tipik tabela montaj mesafesi) olduğu varsayılır.
-            const horizontalFOV_CM = 254; // 2.2 metreden çekilen ekranın kapsadığı gerçek dünya genişliği (cm)
-            const scaleFactor = horizontalFOV_CM / sourceCanvas.width;
+            // Kullanıcı alttaki slider ile mesafesini (kalibrasyonunu) anlık olarak ayarlar.
+            const calibrationFactor = calibrationSlider.value / 350; // Standart referans katsayısı
+            const scaleFactor = (sourceCanvas.width / 100) * calibrationFactor;
 
             const widthPx = Math.abs(pinCoords.br.x - pinCoords.tl.x);
             const heightPx = Math.abs(pinCoords.br.y - pinCoords.tl.y);
 
-            const widthCm = Math.round(widthPx * scaleFactor);
-            const heightCm = Math.round(heightPx * scaleFactor);
+            // Pikselden gerçek santimetreye dönüştürme
+            const widthCm = Math.round(widthPx / scaleFactor);
+            const heightCm = Math.round(heightPx / scaleFactor);
 
             // Ölçü Balonlarını Konumlandır ve cm Yaz
             badgeTop.style.left = `${(tl.x + tr.x) / 2}px`;
-            badgeTop.style.top = `${tl.y - 22}px`;
+            badgeTop.style.top = `${tl.y - 25}px`;
             badgeTop.innerText = `${widthCm} cm`;
 
-            badgeRight.style.left = `${tr.x + 36}px`;
+            badgeRight.style.left = `${tr.x + 40}px`;
             badgeRight.style.top = `${(tr.y + br.y) / 2}px`;
             badgeRight.innerText = `${heightCm} cm`;
         }
+
+        // Kalibrasyon Sürgüsü Değiştiğinde Ölçüleri Anlık Güncelle
+        calibrationSlider.addEventListener('input', updateUI);
 
         // Sürükleme ve Dokunma Kontrolleri
         let activePin = null;
@@ -471,8 +524,6 @@ html_code = """
             pin.addEventListener('pointerdown', (e) => {
                 activePin = pin.getAttribute('data-id');
                 pin.setPointerCapture(e.pointerId);
-                magnifier.style.display = 'block';
-                updateMagnifier(e);
             });
             
             pin.addEventListener('pointermove', (e) => {
@@ -486,40 +537,7 @@ html_code = """
                 x = Math.max(0, Math.min(x, sourceCanvas.width));
                 y = Math.max(0, Math.min(y, sourceCanvas.height));
                 
-                pinCoords[activePin] = { x, y };
-                updateUI();
-                updateMagnifier(e);
-            });
-            
-            const stopDrag = (e) => {
-                if (activePin) {
-                    pins[activePin].releasePointerCapture(e.pointerId);
-                    activePin = null;
-                    magnifier.style.display = 'none';
-                }
-            };
-            
-            pin.addEventListener('pointerup', stopDrag);
-            pin.addEventListener('pointercancel', stopDrag);
-        });
-
-        // Büyüteç Görünümünü Güncelleme
-        function updateMagnifier(e) {
-            if (!activePin) return;
-            const px = pinCoords[activePin].x;
-            const py = pinCoords[activePin].y;
-            
-            magnifier.style.left = `${e.clientX - 55}px`;
-            magnifier.style.top = `${e.clientY - 120}px`;
-            
-            const zoom = 2.5;
-            magnifier.style.backgroundImage = `url(${sourceCanvas.toDataURL()})`;
-            magnifier.style.backgroundSize = `${sourceCanvas.width * zoom}px ${sourceCanvas.height * zoom}px`;
-            magnifier.style.backgroundPosition = `-${(px * zoom) - 55}px -${(py * zoom) - 55}px`;
-        }
-
-        // Görseli Ölçüleriyle Birlikte Galeriye Kaydetme
-        document.getElementById('save-btn').addEventListener('click', () => {
+        document.getElementById('save-btn').addEventListener('click', async () => {
             const outCanvas = document.createElement('canvas');
             outCanvas.width = capturedImage.width;
             outCanvas.height = capturedImage.height;
@@ -539,46 +557,62 @@ html_code = """
 
             // 2. Ölçü Çizgilerini Çiz
             ctx.strokeStyle = '#ffd60a';
-            ctx.lineWidth = Math.max(4, capturedImage.width * 0.005);
-            ctx.setLineDash([Math.max(10, capturedImage.width * 0.01), Math.max(10, capturedImage.width * 0.01)]);
+            ctx.lineWidth = Math.max(5, capturedImage.width * 0.006);
             
-            // Üst ve Sağ kenar belirgin (Sarı), alt ve sol daha silik
+            // 4 tarafı da belirgin sarı olarak çiz
             ctx.beginPath();
             ctx.moveTo(tl.x, tl.y);
             ctx.lineTo(tr.x, tr.y);
             ctx.lineTo(br.x, br.y);
-            ctx.stroke();
-
-            ctx.strokeStyle = 'rgba(255, 214, 10, 0.4)';
-            ctx.beginPath();
-            ctx.moveTo(br.x, br.y);
             ctx.lineTo(bl.x, bl.y);
-            ctx.lineTo(tl.x, tl.y);
+            ctx.closePath();
             ctx.stroke();
 
             // Ölçülerin Hesabı
-            const horizontalFOV_CM = 254;
-            const finalScale = horizontalFOV_CM / capturedImage.width;
-            const wCm = Math.round(Math.abs(br.x - tl.x) * finalScale);
-            const hCm = Math.round(Math.abs(br.y - tl.y) * finalScale);
+            const calibrationFactor = calibrationSlider.value / 350;
+            const finalScale = (capturedImage.width / 100) * calibrationFactor;
 
-            // 3. Ölçü Etiketlerini Balon Olarak Çiz (iOS Ölçüm Tarzı)
-            const fontSize = Math.max(20, Math.round(capturedImage.width * 0.024));
+            const wCm = Math.round(Math.abs(br.x - tl.x) / finalScale);
+            const hCm = Math.round(Math.abs(br.y - tl.y) / finalScale);
+
+            // 3. Ölçü Etiketlerini Çiz
+            const fontSize = Math.max(22, Math.round(capturedImage.width * 0.026));
             ctx.font = `bold ${fontSize}px -apple-system, sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.setLineDash([]); // Balonlar düz çizgiyle çizilmeli
 
             // Üst Etiket
-            drawBadge(ctx, `${wCm} cm`, (tl.x + tr.x) / 2, tl.y - (fontSize * 1.2), fontSize);
+            drawBadge(ctx, `${wCm} cm`, (tl.x + tr.x) / 2, tl.y - (fontSize * 1.3), fontSize);
             // Sağ Etiket
-            drawBadge(ctx, `${hCm} cm`, tr.x + (fontSize * 1.8), (tr.y + br.y) / 2, fontSize);
+            drawBadge(ctx, `${hCm} cm`, tr.x + (fontSize * 1.9), (tr.y + br.y) / 2, fontSize);
 
-            // 4. İndirme Penceresini Tetikle
-            const link = document.createElement('a');
-            link.download = `Tabela_Olcum_${wCm}x${hCm}.jpg`;
-            link.href = outCanvas.toDataURL('image/jpeg', 0.95);
-            link.click();
+            const dataUrl = outCanvas.toDataURL('image/jpeg', 0.95);
+
+            try {
+                // iPhone (iOS) için yerleşik paylaşım sistemini tetikler
+                const response = await fetch(dataUrl);
+                const blob = await response.blob();
+                const file = new File([blob], `tabela_olcum_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Tabela Ölçümü',
+                    });
+                    return; // İşlem başarılı, doğrudan indirme adımını atla
+                }
+            } catch (err) {
+                console.log("Paylaşım desteklenmiyor, standart indirmeye geçiliyor.", err);
+            }
+
+            // Android veya Desteklemeyen Cihazlar İçin Doğrudan İndirme
+            const downloadLink = document.createElement('a');
+            downloadLink.download = `tabela_olcum_${Date.now()}.jpg`;
+            downloadLink.href = dataUrl;
+            
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
         });
 
         // Şık Balon Çizme Yardımcı Fonksiyonu
@@ -589,17 +623,14 @@ html_code = """
             const rectW = textWidth + (paddingH * 2);
             const rectH = fontSize + (paddingV * 2);
             
-            // Balon Arka Planı (Koyu, Yarı Saydam)
-            ctx.fillStyle = 'rgba(17, 17, 17, 0.9)';
+            ctx.fillStyle = 'rgba(17, 17, 17, 0.95)';
             roundRect(ctx, x - (rectW / 2), y - (rectH / 2), rectW, rectH, rectH / 2);
             ctx.fill();
             
-            // Balon Çerçevesi (İnce Sarı)
-            ctx.strokeStyle = 'rgba(255, 214, 10, 0.5)';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#ffd60a';
+            ctx.lineWidth = 3;
             ctx.stroke();
             
-            // Balon Yazısı (Sarı)
             ctx.fillStyle = '#ffd60a';
             ctx.fillText(text, x, y);
         }
