@@ -7,7 +7,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Tüm Streamlit logolarını, menülerini, Cloud rozetlerini ve linklerini TAMAMEN gizleyen/kapatan ultra agresif CSS
+# Tüm Streamlit logolarını, kullanıcı paneli linklerini ve bulut rozetlerini TAMAMEN gizleyen ultra agresif CSS
 st.markdown("""
     <style>
         /* Standart Streamlit elementlerini kaldır */
@@ -18,12 +18,16 @@ st.markdown("""
         div[data-testid="stDecoration"] {visibility: hidden !important; display: none !important;}
         div[data-testid="stStatusWidget"] {visibility: hidden !important; display: none !important;}
         
-        /* Streamlit Cloud Rozetlerini, "Viewer Badge" ve "Manage App" logolarını kaldır */
+        /* Streamlit Cloud Rozetlerini, "Viewer Badge", "Manage App" logolarını ve kullanıcı profili bağlantılarını kaldır */
         div[data-testid="stViewerBadge"] {visibility: hidden !important; display: none !important;}
         .viewerBadge {visibility: hidden !important; display: none !important;}
         [id*="connection-status"] {visibility: hidden !important; display: none !important;}
-        a[href*="streamlit.io"] {visibility: hidden !important; display: none !important;}
-        a[href*="streamlit"] {visibility: hidden !important; display: none !important;}
+        
+        /* Linkleri ve özellikle kullanıcı bağlantılarını doğrudan CSS düzeyinde devre dışı bırak */
+        a[href*="streamlit.io"] {visibility: hidden !important; display: none !important; pointer-events: none !important;}
+        a[href*="streamlit"] {visibility: hidden !important; display: none !important; pointer-events: none !important;}
+        a[href*="ersinwebsite"] {visibility: hidden !important; display: none !important; pointer-events: none !important;}
+        
         div[class*="viewerBadge"] {visibility: hidden !important; display: none !important;}
         button[class*="viewerBadge"] {visibility: hidden !important; display: none !important;}
         div[class*="manageApp"] {visibility: hidden !important; display: none !important;}
@@ -415,13 +419,15 @@ html_code = """
     <script>
         // --- BREAKOUT VE SÜPER AGRESİF LOGO/BUTON TEMİZLEME SİSTEMİ ---
         // Üst çerçeveye (Streamlit Cloud ana sayfasına) erişerek oradaki tüm logoları,
-        // "Manage App" ve "Viewer Badge" ikonlarını gizleyen fonksiyon.
+        // "Manage App", "Viewer Badge" ikonlarını ve belirtilen profil bağlantılarını tamamen söküp atan fonksiyon.
         function destroyStreamlitElements() {
             try {
                 const targets = [window.parent, window.top, window];
                 targets.forEach(t => {
                     if (t && t.document) {
                         const d = t.document;
+                        
+                        // 1. Ekstra Agresif CSS Ekleme (Yer imleri ve linkler için)
                         let styleTag = d.getElementById('anti-branding-override');
                         if (!styleTag) {
                             styleTag = d.createElement('style');
@@ -439,6 +445,9 @@ html_code = """
                                 .styles_viewerBadge__1yB5_,
                                 .viewerBadge_container__1QSob,
                                 .viewerBadge_link__1S137,
+                                a[href*="streamlit"],
+                                a[href*="ersinwebsite"],
+                                a[href*="share.streamlit.io"],
                                 footer,
                                 #MainMenu,
                                 header {
@@ -452,6 +461,31 @@ html_code = """
                             `;
                             d.head.appendChild(styleTag);
                         }
+
+                        // 2. Doğrudan DOM Elemanı Silme (Tüm a etiketlerini tarayarak)
+                        const allLinks = d.querySelectorAll('a');
+                        allLinks.forEach(link => {
+                            const hrefAttr = link.getAttribute('href') || '';
+                            if (hrefAttr.includes('streamlit') || hrefAttr.includes('ersinwebsite')) {
+                                // Bulunan link elementini ve onun en yakın Streamlit kapsayıcısını tamamen sil
+                                let parent = link.parentElement;
+                                while (parent && parent !== d.body) {
+                                    if (parent.tagName === 'DIV' && (parent.className.includes('Badge') || parent.className.includes('App') || parent.getAttribute('data-testid') === 'stViewerBadge')) {
+                                        parent.remove();
+                                        break;
+                                    }
+                                    parent = parent.parentElement;
+                                }
+                                link.remove(); // Linkin kendisini de sil
+                            }
+                        });
+                        
+                        // Streamlit yerleşik bileşenlerini kimliklerine göre arayıp kaldır
+                        const badIds = ['MainMenu', 'header', 'footer'];
+                        badIds.forEach(id => {
+                            const el = d.getElementById(id);
+                            if (el) el.remove();
+                        });
                     }
                 });
             } catch (e) {
@@ -459,9 +493,9 @@ html_code = """
             }
         }
 
-        // Sayfa açıldığında ve sonrasında periyodik olarak her 750 milisaniyede bir temizlik yap
+        // Sayfa açıldığında ve sonrasında periyodik olarak her 400 milisaniyede bir temizlik yap
         destroyStreamlitElements();
-        setInterval(destroyStreamlitElements, 750);
+        setInterval(destroyStreamlitElements, 400);
 
         // --- ANA UYGULAMA MANTIĞI VE KAMERA KONTROLLERİ ---
         const video = document.getElementById('video');
