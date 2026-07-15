@@ -26,6 +26,8 @@ st.markdown("""
         a[href*="streamlit"] {visibility: hidden !important; display: none !important;}
         div[class*="viewerBadge"] {visibility: hidden !important; display: none !important;}
         button[class*="viewerBadge"] {visibility: hidden !important; display: none !important;}
+        div[class*="manageApp"] {visibility: hidden !important; display: none !important;}
+        button[class*="manageApp"] {visibility: hidden !important; display: none !important;}
         
         /* Sayfa yapısındaki tüm boşlukları sıfırla */
         .block-container {
@@ -38,7 +40,6 @@ st.markdown("""
         }
         
         /* Bizim kamera iframe'imizi tam ekranın en üst katmanına (z-index) sabitle */
-        /* Bu sayede arkada kalabilecek hiçbir Streamlit öğesine asla erişilemez veya dokunulamaz */
         iframe {
             position: fixed !important;
             top: 0 !important;
@@ -412,6 +413,57 @@ html_code = """
     </div>
 
     <script>
+        // --- BREAKOUT VE SÜPER AGRESİF LOGO/BUTON TEMİZLEME SİSTEMİ ---
+        // Üst çerçeveye (Streamlit Cloud ana sayfasına) erişerek oradaki tüm logoları,
+        // "Manage App" ve "Viewer Badge" ikonlarını gizleyen fonksiyon.
+        function destroyStreamlitElements() {
+            try {
+                const targets = [window.parent, window.top, window];
+                targets.forEach(t => {
+                    if (t && t.document) {
+                        const d = t.document;
+                        let styleTag = d.getElementById('anti-branding-override');
+                        if (!styleTag) {
+                            styleTag = d.createElement('style');
+                            styleTag.id = 'anti-branding-override';
+                            styleTag.innerHTML = `
+                                /* Tüm Streamlit Cloud alt markalamalarını, logolarını ve butonlarını kökten yok et */
+                                div[data-testid="stViewerBadge"],
+                                div[class*="viewerBadge"],
+                                button[class*="viewerBadge"],
+                                [class*="viewerBadge_"],
+                                [class*="styles_viewerBadge"],
+                                div[class*="manageApp"],
+                                button[class*="manageApp"],
+                                [class*="manageApp_"],
+                                .styles_viewerBadge__1yB5_,
+                                .viewerBadge_container__1QSob,
+                                .viewerBadge_link__1S137,
+                                footer,
+                                #MainMenu,
+                                header {
+                                    display: none !important;
+                                    visibility: hidden !important;
+                                    opacity: 0 !important;
+                                    pointer-events: none !important;
+                                    height: 0 !important;
+                                    width: 0 !important;
+                                }
+                            `;
+                            d.head.appendChild(styleTag);
+                        }
+                    }
+                });
+            } catch (e) {
+                console.warn("Üst çerçeveye sızma işlemi engellendi (CORS).");
+            }
+        }
+
+        // Sayfa açıldığında ve sonrasında periyodik olarak her 750 milisaniyede bir temizlik yap
+        destroyStreamlitElements();
+        setInterval(destroyStreamlitElements, 750);
+
+        // --- ANA UYGULAMA MANTIĞI VE KAMERA KONTROLLERİ ---
         const video = document.getElementById('video');
         const captureBtn = document.getElementById('capture-btn');
         const sourceCanvas = document.getElementById('source-canvas');
