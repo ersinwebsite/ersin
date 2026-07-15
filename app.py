@@ -1,37 +1,15 @@
-import os
-import subprocess
-import sys
-
-# --- OTOMATİK KÜTÜPHANE YÜKLEME SİSTEMİ ---
-# requirements.txt dosyasına ihtiyaç kalmaması için kütüphaneleri arka planda kurar.
-def install_requirements():
-    required_packages = {
-        "opencv-python-headless": "cv2",
-        "pillow": "PIL",
-        "numpy": "numpy"
-    }
-    for package, import_name in required_packages.items():
-        try:
-            __import__(import_name)
-        except ImportError:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-
-# Kütüphaneleri otomatik yükle
-install_requirements()
-
 import streamlit as st
 import cv2
 import numpy as np
 from PIL import Image
 
-# --- WEB SİTESİ ARAYÜZÜ ---
+# Sayfa Genişlik Ayarı
 st.set_page_config(page_title="Tabela En-Boy Ölçer", layout="centered")
 
 st.title("📐 Akıllı Tabela & En-Boy Ölçer")
-st.write("Telefonunuzdan kamerayı açıp fotoğraf çekin. Sistem objeleri otomatik tespit edip oranlarını çıkaracaktır.")
+st.write("Telefonunuzdan kamerasını açıp fotoğraf çekin. Sistem objeleri otomatik tespit edip oranlarını çıkaracaktır.")
 
-# Mobil cihazlarda arka kamerayı öncelikli olarak açması için kamera bileşeni
-img_file = st.camera_input("Kamera", label_visibility="collapsed")
+#img_file = st.camera_input("Kamera", label_visibility="collapsed")
 
 if img_file is not None:
     # Fotoğrafı OpenCV formatına dönüştür
@@ -39,8 +17,7 @@ if img_file is not None:
     img_np = np.array(image)
     original_img = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
     
-    # Görüntü işleme adımları (Sınırları belirginleştirme)
-    gray = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
+    #    gray = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     edged = cv2.Canny(blurred, 30, 150)
     
@@ -50,14 +27,14 @@ if img_file is not None:
     # Çok küçük gürültüleri ele (Alanı 1200 pikselden büyük olan gerçek objeleri al)
     valid_contours = [c for c in contours if cv2.contourArea(c) > 1200]
     
-    if valid_contours:
+    #    if valid_contours:
         st.success(f"Fotoğrafta {len(valid_contours)} adet potansiyel obje algılandı!")
         
         # Kullanıcının listeden ölçmek istediği objeyi seçmesini sağlayan menü
         options = ["Ölçmek istediğiniz objeyi seçin..."] + [f"Obje #{i+1}" for i in range(len(valid_contours))]
         selected_option = st.selectbox("Hangi objenin en-boy oranını görmek istersiniz?", options)
         
-        if selected_option != "Ölçmek istediğiniz objeyi seçin...":
+        #        if selected_option != "Ölçmek istediğiniz objeyi seçin...":
             # Seçilen objenin numarasını al
             idx = int(selected_option.split("#")[1]) - 1
             chosen_contour = valid_contours[idx]
@@ -85,8 +62,7 @@ if img_file is not None:
             st.info(f"💡 Seçtiğiniz objenin genişliği, yüksekliğinin tam **{aspect_ratio:.2f}** katıdır.")
             
         else:
-            # Henüz bir obje seçilmediyse tüm objeleri kırmızı kutu ve numaralarla ekranda göster
-            all_objs_img = original_img.copy()
+            #            all_objs_img = original_img.copy()
             for i, c in enumerate(valid_contours):
                 x, y, w, h = cv2.boundingRect(c)
                 cv2.rectangle(all_objs_img, (x, y), (x + w, y + h), (0, 0, 255), 3)
