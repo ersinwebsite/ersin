@@ -1,39 +1,27 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
+# Sayfa yapılandırması - Gizli kenar çubuklu tam ekran modu
 st.set_page_config(
     page_title="Tabela Ölçer PRO",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Tüm Streamlit logolarını, kullanıcı paneli linklerini ve bulut rozetlerini TAMAMEN gizleyen ultra agresif CSS
+# Sadece Streamlit bileşenlerini hedefleyen akıllı ve güvenli CSS koruması
 st.markdown("""
     <style>
-        /* Standart Streamlit elementlerini kaldır */
+        /* Standart Streamlit marka elementlerini parent seviyesinde gizle */
         #MainMenu {visibility: hidden !important; display: none !important;}
         header {visibility: hidden !important; display: none !important;}
         footer {visibility: hidden !important; display: none !important;}
         div[data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
         div[data-testid="stDecoration"] {visibility: hidden !important; display: none !important;}
         div[data-testid="stStatusWidget"] {visibility: hidden !important; display: none !important;}
-        
-        /* Streamlit Cloud Rozetlerini, "Viewer Badge", "Manage App" logolarını ve kullanıcı profili bağlantılarını kaldır */
         div[data-testid="stViewerBadge"] {visibility: hidden !important; display: none !important;}
         .viewerBadge {visibility: hidden !important; display: none !important;}
-        [id*="connection-status"] {visibility: hidden !important; display: none !important;}
         
-        /* Linkleri ve özellikle kullanıcı bağlantılarını doğrudan CSS düzeyinde devre dışı bırak */
-        a[href*="streamlit.io"] {visibility: hidden !important; display: none !important; pointer-events: none !important;}
-        a[href*="streamlit"] {visibility: hidden !important; display: none !important; pointer-events: none !important;}
-        a[href*="ersinwebsite"] {visibility: hidden !important; display: none !important; pointer-events: none !important;}
-        
-        div[class*="viewerBadge"] {visibility: hidden !important; display: none !important;}
-        button[class*="viewerBadge"] {visibility: hidden !important; display: none !important;}
-        div[class*="manageApp"] {visibility: hidden !important; display: none !important;}
-        button[class*="manageApp"] {visibility: hidden !important; display: none !important;}
-        
-        /* Sayfa yapısındaki tüm boşlukları sıfırla */
+        /* Sayfa yapısındaki tüm gereksiz boşlukları tamamen sıfırla */
         .block-container {
             padding-top: 0rem !important;
             padding-bottom: 0rem !important;
@@ -41,10 +29,11 @@ st.markdown("""
             padding-right: 0rem !important;
             max-width: 100% !important;
             height: 100vh !important;
+            width: 100vw !important;
         }
         
-        /* Bizim kamera iframe'imizi tam ekranın en üst katmanına (z-index) sabitle */
-        iframe {
+        /* BEYAZ EKRAN ÇÖZÜMÜ: Sadece bizim kendi HTML ölçüm arayüzümüzün iframini tam ekran yap */
+        div[data-testid="stHtml"] iframe {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
@@ -58,7 +47,6 @@ st.markdown("""
             background-color: #000000 !important;
         }
         
-        /* Parent gövdede hiçbir şekilde kaydırma çubuğu gösterme */
         body {
             background-color: #000000 !important;
             margin: 0 !important;
@@ -108,7 +96,7 @@ html_code = """
             justify-content: space-between;
         }
 
-        /* KAMERA EKRANI */
+        /* KAMERA GÖRÜNTÜ ALANI */
         #camera-container {
             position: relative;
             width: 100%;
@@ -163,7 +151,7 @@ html_code = """
             justify-content: center;
             align-items: center;
             font-weight: 800;
-            font-size: 14px;
+            font-size: 15px;
             color: #000;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -220,12 +208,12 @@ html_code = """
             z-index: 10;
         }
 
-        /* Akıllı ve Geniş Dokunma Alanına Sahip Pimler */
+        /* Büyük Dokunmatik Alanlı Pim Tasarımları */
         .pin {
             position: absolute;
-            width: 56px; /* Genişletilmiş hassas dokunma alanı */
+            width: 56px;
             height: 56px;
-            background: rgba(255, 214, 10, 0.15); /* Hafif belirgin dairesel alan */
+            background: rgba(255, 214, 10, 0.15);
             border: 1.5px dashed rgba(255, 214, 10, 0.3);
             border-radius: 50%;
             transform: translate(-50%, -50%);
@@ -242,7 +230,6 @@ html_code = """
             background: rgba(255, 214, 10, 0.3);
             border-color: #ffd60a;
         }
-        /* Merkeze odaklanmış şık sarı pim noktası */
         .pin-inner {
             width: 16px;
             height: 16px;
@@ -417,87 +404,6 @@ html_code = """
     </div>
 
     <script>
-        // --- BREAKOUT VE SÜPER AGRESİF LOGO/BUTON TEMİZLEME SİSTEMİ ---
-        // Üst çerçeveye (Streamlit Cloud ana sayfasına) erişerek oradaki tüm logoları,
-        // "Manage App", "Viewer Badge" ikonlarını ve belirtilen profil bağlantılarını tamamen söküp atan fonksiyon.
-        function destroyStreamlitElements() {
-            try {
-                const targets = [window.parent, window.top, window];
-                targets.forEach(t => {
-                    if (t && t.document) {
-                        const d = t.document;
-                        
-                        // 1. Ekstra Agresif CSS Ekleme (Yer imleri ve linkler için)
-                        let styleTag = d.getElementById('anti-branding-override');
-                        if (!styleTag) {
-                            styleTag = d.createElement('style');
-                            styleTag.id = 'anti-branding-override';
-                            styleTag.innerHTML = `
-                                /* Tüm Streamlit Cloud alt markalamalarını, logolarını ve butonlarını kökten yok et */
-                                div[data-testid="stViewerBadge"],
-                                div[class*="viewerBadge"],
-                                button[class*="viewerBadge"],
-                                [class*="viewerBadge_"],
-                                [class*="styles_viewerBadge"],
-                                div[class*="manageApp"],
-                                button[class*="manageApp"],
-                                [class*="manageApp_"],
-                                .styles_viewerBadge__1yB5_,
-                                .viewerBadge_container__1QSob,
-                                .viewerBadge_link__1S137,
-                                a[href*="streamlit"],
-                                a[href*="ersinwebsite"],
-                                a[href*="share.streamlit.io"],
-                                footer,
-                                #MainMenu,
-                                header {
-                                    display: none !important;
-                                    visibility: hidden !important;
-                                    opacity: 0 !important;
-                                    pointer-events: none !important;
-                                    height: 0 !important;
-                                    width: 0 !important;
-                                }
-                            `;
-                            d.head.appendChild(styleTag);
-                        }
-
-                        // 2. Doğrudan DOM Elemanı Silme (Tüm a etiketlerini tarayarak)
-                        const allLinks = d.querySelectorAll('a');
-                        allLinks.forEach(link => {
-                            const hrefAttr = link.getAttribute('href') || '';
-                            if (hrefAttr.includes('streamlit') || hrefAttr.includes('ersinwebsite')) {
-                                // Bulunan link elementini ve onun en yakın Streamlit kapsayıcısını tamamen sil
-                                let parent = link.parentElement;
-                                while (parent && parent !== d.body) {
-                                    if (parent.tagName === 'DIV' && (parent.className.includes('Badge') || parent.className.includes('App') || parent.getAttribute('data-testid') === 'stViewerBadge')) {
-                                        parent.remove();
-                                        break;
-                                    }
-                                    parent = parent.parentElement;
-                                }
-                                link.remove(); // Linkin kendisini de sil
-                            }
-                        });
-                        
-                        // Streamlit yerleşik bileşenlerini kimliklerine göre arayıp kaldır
-                        const badIds = ['MainMenu', 'header', 'footer'];
-                        badIds.forEach(id => {
-                            const el = d.getElementById(id);
-                            if (el) el.remove();
-                        });
-                    }
-                });
-            } catch (e) {
-                console.warn("Üst çerçeveye sızma işlemi engellendi (CORS).");
-            }
-        }
-
-        // Sayfa açıldığında ve sonrasında periyodik olarak her 400 milisaniyede bir temizlik yap
-        destroyStreamlitElements();
-        setInterval(destroyStreamlitElements, 400);
-
-        // --- ANA UYGULAMA MANTIĞI VE KAMERA KONTROLLERİ ---
         const video = document.getElementById('video');
         const captureBtn = document.getElementById('capture-btn');
         const sourceCanvas = document.getElementById('source-canvas');
@@ -505,11 +411,9 @@ html_code = """
         const calibRatioText = document.getElementById('calib-ratio-text');
         const boxFill = document.getElementById('box-fill');
         
-        // Ekran Katmanları
         const camScreen = document.getElementById('camera-screen');
         const measureScreen = document.getElementById('measure-screen');
         
-        // Pimler ve Çizgiler
         const pins = {
             tl: document.getElementById('pin-tl'),
             tr: document.getElementById('pin-tr'),
@@ -525,7 +429,6 @@ html_code = """
         const badgeTop = document.getElementById('badge-top');
         const badgeRight = document.getElementById('badge-right');
         
-        // 4 Köşe Koordinat Yapısı
         let pinCoords = {
             tl: { x: 0, y: 0 },
             tr: { x: 0, y: 0 },
@@ -535,7 +438,7 @@ html_code = """
 
         let capturedImage = new Image();
 
-        // Kamerayı Başlat (Arka Kamera Öncelikli)
+        // Kamerayı Arka Kamera Öncelikli Başlat
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
@@ -548,14 +451,14 @@ html_code = """
                     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
                     video.srcObject = stream;
                 } catch (e) {
-                    console.error("Kameraya erişilemedi: " + e.message);
+                    console.error("Kamera bağlantısı kurulamadı: " + e.message);
                 }
             }
         }
 
         startCamera();
 
-        // Fotoğrafı Çek
+        // Fotoğrafı Çek ve Sahneye Aktar
         captureBtn.addEventListener('click', () => {
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = video.videoWidth;
@@ -569,7 +472,6 @@ html_code = """
             };
         });
 
-        // Ölçüm Ekranını ve Pim Başlangıç Konumlarını Kur
         function showMeasureScreen() {
             camScreen.classList.remove('active');
             measureScreen.classList.add('active');
@@ -591,7 +493,7 @@ html_code = """
             const cw = sourceCanvas.width;
             const ch = sourceCanvas.height;
             
-            // Başlangıçta ekranın ortasında dengeli 4 adet köşe pimi
+            // Başlangıç dengeli köşe konumları
             pinCoords.tl = { x: cw * 0.25, y: ch * 0.35 };
             pinCoords.tr = { x: cw * 0.75, y: ch * 0.35 };
             pinCoords.br = { x: cw * 0.75, y: ch * 0.65 };
@@ -600,12 +502,11 @@ html_code = """
             updateUI();
         }
 
-        // Pimlerin Konumlarına Göre Çizgileri ve Ölçüleri Hesapla
         function updateUI() {
             const canvasOffsetLeft = sourceCanvas.offsetLeft;
             const canvasOffsetTop = sourceCanvas.offsetTop;
 
-            // Pimleri yerleştir
+            // Pimlerin fiziksel konumlarını güncelle
             pins.tl.style.left = `${pinCoords.tl.x + canvasOffsetLeft}px`;
             pins.tl.style.top = `${pinCoords.tl.y + canvasOffsetTop}px`;
             
@@ -623,11 +524,11 @@ html_code = """
             const br = { x: pinCoords.br.x + canvasOffsetLeft, y: pinCoords.br.y + canvasOffsetTop };
             const bl = { x: pinCoords.bl.x + canvasOffsetLeft, y: pinCoords.bl.y + canvasOffsetTop };
 
-            // Ortadaki Sürüklenebilir Alanı Güncelle
+            // Çokgen İç Alanını Boyama
             const pts = `${tl.x},${tl.y} ${tr.x},${tr.y} ${br.x},${br.y} ${bl.x},${bl.y}`;
             boxFill.setAttribute('points', pts);
 
-            // Çizgileri güncelle - Hepsi Sarı ve Net
+            // Noktalı Kenar Çizgilerini Eşit Sarı ve Belirgin Çiz
             lineTop.setAttribute('x1', tl.x); lineTop.setAttribute('y1', tl.y);
             lineTop.setAttribute('x2', tr.x); lineTop.setAttribute('y2', tr.y);
 
@@ -640,20 +541,19 @@ html_code = """
             lineLeft.setAttribute('x1', bl.x); lineLeft.setAttribute('y1', bl.y);
             lineLeft.setAttribute('x2', tl.x); lineLeft.setAttribute('y2', tl.y);
 
-            // Akıllı Fiziksel Mesafe/cm Hesaplama Formülü
-            const calibrationFactor = calibrationSlider.value / 350; // Standart referans katsayısı
+            // Gerçek Metre Kalibrasyon Algoritması
+            const calibrationFactor = calibrationSlider.value / 350;
             calibRatioText.innerText = `x${calibrationFactor.toFixed(2)}`;
             const scaleFactor = (sourceCanvas.width / 100) * calibrationFactor;
 
-            // Hipotenüs formülü ile gerçek eğim açısına duyarlı mesafe hesabı
+            // Kenar uzunluklarını hipotenüs formülüyle açılara duyarlı hesapla
             const widthPx = Math.hypot(pinCoords.tr.x - pinCoords.tl.x, pinCoords.tr.y - pinCoords.tl.y);
             const heightPx = Math.hypot(pinCoords.br.x - pinCoords.tr.x, pinCoords.br.y - pinCoords.tr.y);
 
-            // Pikselden gerçek santimetreye dönüştürme
             const widthCm = Math.round(widthPx / scaleFactor);
             const heightCm = Math.round(heightPx / scaleFactor);
 
-            // Ölçü Balonlarını Konumlandır ve cm Yaz
+            // Ölçüm Balonları (Sadece Üst ve Sağ Kenar)
             badgeTop.style.left = `${(tl.x + tr.x) / 2}px`;
             badgeTop.style.top = `${(tl.y + tr.y) / 2 - 25}px`;
             badgeTop.innerText = `${widthCm} cm`;
@@ -663,10 +563,9 @@ html_code = """
             badgeRight.innerText = `${heightCm} cm`;
         }
 
-        // Kalibrasyon Sürgüsü Değiştiğinde Ölçüleri Anlık Güncelle
         calibrationSlider.addEventListener('input', updateUI);
 
-        // 1. TEKLİ PİM SÜRÜKLEME KONTROLLERİ
+        // 1. Bireysel Pim Sürükleme Mantığı
         let activePin = null;
         
         document.querySelectorAll('.pin').forEach(pin => {
@@ -683,7 +582,6 @@ html_code = """
                 let x = e.clientX - rect.left;
                 let y = e.clientY - rect.top;
                 
-                // Canvas dışına taşmayı engelle
                 x = Math.max(0, Math.min(x, sourceCanvas.width));
                 y = Math.max(0, Math.min(y, sourceCanvas.height));
                 
@@ -709,7 +607,7 @@ html_code = """
             });
         });
 
-        // 2. ORTA ALANDAN TUTARAK KUTUYU KOMPLE TAŞIMA SİSTEMİ
+        // 2. Çokgen Orta Bölgesinden Komple Sürükleyip Taşıma Mantığı
         let isDraggingBox = false;
         let dragStartPointer = { x: 0, y: 0 };
         let dragStartCoords = {};
@@ -717,7 +615,6 @@ html_code = """
         boxFill.addEventListener('pointerdown', (e) => {
             isDraggingBox = true;
             dragStartPointer = { x: e.clientX, y: e.clientY };
-            // Sürükleme başlangıcındaki pim konumlarını kaydet
             dragStartCoords = {
                 tl: { ...pinCoords.tl },
                 tr: { ...pinCoords.tr },
@@ -734,7 +631,6 @@ html_code = """
             const dx = e.clientX - dragStartPointer.x;
             const dy = e.clientY - dragStartPointer.y;
 
-            // Herhangi bir pimin canvas sınırlarının dışına çıkıp çıkmayacağını kontrol et
             let canMove = true;
             const keys = ['tl', 'tr', 'br', 'bl'];
             
@@ -748,7 +644,6 @@ html_code = """
                 }
             }
 
-            // Sınırlar ihlal edilmediyse tüm pimleri topluca kaydır
             if (canMove) {
                 for (const key of keys) {
                     pinCoords[key].x = dragStartCoords[key].x + dx;
@@ -766,17 +661,15 @@ html_code = """
             }
         });
 
-        // Kaydet Butonuna Basıldığında Görseli Birleştirip Paylaş / İndir
+        // 3. Çizgili / Ölçümlü Fotoğrafı Galeriye Kaydetme
         document.getElementById('save-btn').addEventListener('click', async () => {
             const outCanvas = document.createElement('canvas');
             outCanvas.width = capturedImage.width;
             outCanvas.height = capturedImage.height;
             const ctx = outCanvas.getContext('2d');
             
-            // 1. Orijinal fotoğrafı çiz
             ctx.drawImage(capturedImage, 0, 0);
             
-            // Ölçek katsayıları
             const scaleX = capturedImage.width / sourceCanvas.width;
             const scaleY = capturedImage.height / sourceCanvas.height;
             
@@ -785,11 +678,10 @@ html_code = """
             const br = { x: pinCoords.br.x * scaleX, y: pinCoords.br.y * scaleY };
             const bl = { x: pinCoords.bl.x * scaleX, y: pinCoords.bl.y * scaleY };
 
-            // 2. Ölçü Çizgilerini Çiz
+            // Sarı Parlak Çizgileri Kaydedilecek Fotoğrafa İşle
             ctx.strokeStyle = '#ffd60a';
             ctx.lineWidth = Math.max(5, capturedImage.width * 0.006);
             
-            // 4 tarafı da belirgin sarı olarak çiz
             ctx.beginPath();
             ctx.moveTo(tl.x, tl.y);
             ctx.lineTo(tr.x, tr.y);
@@ -798,28 +690,25 @@ html_code = """
             ctx.closePath();
             ctx.stroke();
 
-            // Ölçülerin Hesabı
             const calibrationFactor = calibrationSlider.value / 350;
             const finalScale = (capturedImage.width / 100) * calibrationFactor;
 
             const wCm = Math.round(Math.hypot(tr.x - tl.x, tr.y - tl.y) / finalScale);
             const hCm = Math.round(Math.hypot(br.x - tr.x, br.y - tr.y) / finalScale);
 
-            // 3. Ölçü Etiketlerini Çiz
             const fontSize = Math.max(22, Math.round(capturedImage.width * 0.026));
             ctx.font = `bold ${fontSize}px -apple-system, sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // Üst Etiket
+            // Ölçüm Balonlarını Fotoğrafa Kaydet
             drawBadge(ctx, `${wCm} cm`, (tl.x + tr.x) / 2, (tl.y + tr.y) / 2 - (fontSize * 1.3), fontSize);
-            // Sağ Etiket
             drawBadge(ctx, `${hCm} cm`, (tr.x + br.x) / 2 + (fontSize * 1.9), (tr.y + br.y) / 2, fontSize);
 
             const dataUrl = outCanvas.toDataURL('image/jpeg', 0.95);
 
             try {
-                // iPhone (iOS) için yerleşik paylaşım sistemini tetikler
+                // iPhone / iOS cihazlarda doğrudan galeriye (Save Image) kaydetme akışı
                 const response = await fetch(dataUrl);
                 const blob = await response.blob();
                 const file = new File([blob], `tabela_olcum_${Date.now()}.jpg`, { type: 'image/jpeg' });
@@ -829,13 +718,13 @@ html_code = """
                         files: [file],
                         title: 'Tabela Ölçümü',
                     });
-                    return; // İşlem başarılı, doğrudan indirme adımını atla
+                    return;
                 }
             } catch (err) {
-                console.log("Paylaşım desteklenmiyor, standart indirmeye geçiliyor.", err);
+                console.log("iOS Paylaşım motoru desteklenmiyor veya engellendi. Standart indirme başlatılıyor.");
             }
 
-            // Android veya Desteklemeyen Cihazlar İçin Doğrudan İndirme
+            // Android ve Masaüstü Tarayıcılar İçin Doğrudan İndirme
             const downloadLink = document.createElement('a');
             downloadLink.download = `tabela_olcum_${Date.now()}.jpg`;
             downloadLink.href = dataUrl;
@@ -845,7 +734,7 @@ html_code = """
             document.body.removeChild(downloadLink);
         });
 
-        // Şık Balon Çizme Yardımcı Fonksiyonu
+        // Şık Ölçü Kutucuğu Çizim Fonksiyonu
         function drawBadge(ctx, text, x, y, fontSize) {
             const paddingH = fontSize * 0.8;
             const paddingV = fontSize * 0.4;
@@ -879,7 +768,7 @@ html_code = """
             ctx.closePath();
         }
 
-        // Geri Dön / Vazgeç Butonu
+        // Kameraya Geri Dön
         document.getElementById('back-to-cam').addEventListener('click', () => {
             measureScreen.classList.remove('active');
             camScreen.classList.add('active');
@@ -891,12 +780,11 @@ html_code = """
             }
         });
 
-        // İkonları Yükle
         lucide.createIcons();
     </script>
 </body>
 </html>
 """
 
-# HTML Bileşenini Render Et
-components.html(html_code, height=900, scrolling=False)
+# HTML Bileşenini Tam Ekran ve Kusursuz Şekilde Render Et
+components.html(html_code, height=1000, scrolling=False)
