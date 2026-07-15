@@ -130,7 +130,7 @@ html_code = """
             width: 64px;
             height: 64px;
             border-radius: 50%;
-            background: #ffcc00;
+            background: #ffd60a;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -148,6 +148,7 @@ html_code = """
             width: 100%;
             height: 100%;
             background: #000;
+            touch-action: none;
         }
         #canvas-wrap {
             position: relative;
@@ -156,6 +157,7 @@ html_code = """
             display: flex;
             justify-content: center;
             align-items: center;
+            touch-action: none;
         }
         #source-canvas {
             max-width: 100%;
@@ -168,6 +170,7 @@ html_code = """
             width: 100%;
             height: 100%;
             pointer-events: none;
+            touch-action: none;
         }
         
         /* Ölçü Balonları */
@@ -189,30 +192,36 @@ html_code = """
             z-index: 10;
         }
 
-        /* Pimler */
+        /* Akıllı ve Geniş Dokunma Alanına Sahip Pimler */
         .pin {
             position: absolute;
-            width: 40px;
-            height: 40px;
-            background: rgba(255, 214, 10, 0.4);
-            border: 3px solid #ffd60a;
+            width: 56px; /* Genişletilmiş hassas dokunma alanı */
+            height: 56px;
+            background: rgba(255, 214, 10, 0.15); /* Hafif belirgin dairesel alan */
+            border: 1.5px dashed rgba(255, 214, 10, 0.3);
             border-radius: 50%;
             transform: translate(-50%, -50%);
-            cursor: pointer;
+            cursor: grab;
             pointer-events: auto;
             touch-action: none;
-            box-shadow: 0 0 15px rgba(255, 214, 10, 0.8);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 20;
         }
-        .pin::after {
-            content: '';
-            width: 12px;
-            height: 12px;
-            background: #fff;
+        .pin:active {
+            cursor: grabbing;
+            background: rgba(255, 214, 10, 0.3);
+            border-color: #ffd60a;
+        }
+        /* Merkeze odaklanmış şık sarı pim noktası */
+        .pin-inner {
+            width: 16px;
+            height: 16px;
+            background: #ffd60a;
+            border: 2.5px solid #fff;
             border-radius: 50%;
+            box-shadow: 0 0 8px rgba(0,0,0,0.6);
         }
 
         /* Akıllı Kalibrasyon Sürgüsü */
@@ -243,6 +252,9 @@ html_code = """
             color: #ffd60a;
             font-weight: 700;
             margin-bottom: 5px;
+            display: flex;
+            gap: 5px;
+            align-items: center;
         }
         .slider-wrapper {
             width: 100%;
@@ -327,9 +339,12 @@ html_code = """
     <div id="measure-screen" class="screen">
         <div id="measure-container">
             
-            <!-- Hassas Kalibrasyon / Masafe Sürgüsü -->
+            <!-- Hassas Kalibrasyon / Mesafe Sürgüsü -->
             <div class="calibration-card">
-                <div class="calibration-title">Mesafe / Hassas Ölçü Ayarı</div>
+                <div class="calibration-title">
+                    <span>Mesafe Ayarı</span> 
+                    <span id="calib-ratio-text" style="color:#fff; font-weight:800; background:rgba(255,255,255,0.15); padding:1px 6px; border-radius:10px; font-size:10px;">x1.00</span>
+                </div>
                 <div class="slider-wrapper">
                     <i data-lucide="minus" style="width: 16px; height: 16px; color: #fff;"></i>
                     <input type="range" id="calibration-slider" min="100" max="600" value="300" class="modern-slider">
@@ -337,9 +352,12 @@ html_code = """
                 </div>
             </div>
 
+            <!-- Sürüklenebilir Alan ve Pimler -->
             <div id="canvas-wrap">
                 <canvas id="source-canvas"></canvas>
                 <svg id="interactive-svg">
+                    <!-- Sürüklenebilir İç Alan (Orta kısımdan topluca kaydırmak için) -->
+                    <polygon id="box-fill" fill="rgba(255, 214, 10, 0.08)" style="pointer-events: auto; cursor: move;"></polygon>
                     <!-- Bağlantı Çizgileri - 4 Tarafı da Aynı Belirginlikte Sarı -->
                     <line id="line-top" stroke="#ffd60a" stroke-width="3" stroke-dasharray="6,6" />
                     <line id="line-right" stroke="#ffd60a" stroke-width="3" stroke-dasharray="6,6" />
@@ -351,9 +369,11 @@ html_code = """
                 <div class="measure-badge" id="badge-top">0 cm</div>
                 <div class="measure-badge" id="badge-right">0 cm</div>
 
-                <!-- 2 Adet Sürüklenebilir Pim (Sol-Üst ve Sağ-Alt) -->
-                <div class="pin" id="pin-tl" data-id="tl"></div>
-                <div class="pin" id="pin-br" data-id="br"></div>
+                <!-- 4 Adet Sürüklenebilir Pim (Büyük dokunmatik alanlı) -->
+                <div class="pin" id="pin-tl" data-id="tl"><div class="pin-inner"></div></div>
+                <div class="pin" id="pin-tr" data-id="tr"><div class="pin-inner"></div></div>
+                <div class="pin" id="pin-br" data-id="br"><div class="pin-inner"></div></div>
+                <div class="pin" id="pin-bl" data-id="bl"><div class="pin-inner"></div></div>
             </div>
             
             <!-- Alt Aksiyon Butonları -->
@@ -373,6 +393,8 @@ html_code = """
         const captureBtn = document.getElementById('capture-btn');
         const sourceCanvas = document.getElementById('source-canvas');
         const calibrationSlider = document.getElementById('calibration-slider');
+        const calibRatioText = document.getElementById('calib-ratio-text');
+        const boxFill = document.getElementById('box-fill');
         
         // Ekran Katmanları
         const camScreen = document.getElementById('camera-screen');
@@ -381,7 +403,9 @@ html_code = """
         // Pimler ve Çizgiler
         const pins = {
             tl: document.getElementById('pin-tl'),
-            br: document.getElementById('pin-br')
+            tr: document.getElementById('pin-tr'),
+            br: document.getElementById('pin-br'),
+            bl: document.getElementById('pin-bl')
         };
         
         const lineTop = document.getElementById('line-top');
@@ -392,9 +416,12 @@ html_code = """
         const badgeTop = document.getElementById('badge-top');
         const badgeRight = document.getElementById('badge-right');
         
+        // 4 Köşe Koordinat Yapısı
         let pinCoords = {
             tl: { x: 0, y: 0 },
-            br: { x: 0, y: 0 }
+            tr: { x: 0, y: 0 },
+            br: { x: 0, y: 0 },
+            bl: { x: 0, y: 0 }
         };
 
         let capturedImage = new Image();
@@ -455,9 +482,11 @@ html_code = """
             const cw = sourceCanvas.width;
             const ch = sourceCanvas.height;
             
-            // Başlangıçta ekranın ortasında dikey/yatay dengeli pimler
+            // Başlangıçta ekranın ortasında dengeli 4 adet köşe pimi
             pinCoords.tl = { x: cw * 0.25, y: ch * 0.35 };
+            pinCoords.tr = { x: cw * 0.75, y: ch * 0.35 };
             pinCoords.br = { x: cw * 0.75, y: ch * 0.65 };
+            pinCoords.bl = { x: cw * 0.25, y: ch * 0.65 };
             
             updateUI();
         }
@@ -471,14 +500,23 @@ html_code = """
             pins.tl.style.left = `${pinCoords.tl.x + canvasOffsetLeft}px`;
             pins.tl.style.top = `${pinCoords.tl.y + canvasOffsetTop}px`;
             
+            pins.tr.style.left = `${pinCoords.tr.x + canvasOffsetLeft}px`;
+            pins.tr.style.top = `${pinCoords.tr.y + canvasOffsetTop}px`;
+            
             pins.br.style.left = `${pinCoords.br.x + canvasOffsetLeft}px`;
             pins.br.style.top = `${pinCoords.br.y + canvasOffsetTop}px`;
+            
+            pins.bl.style.left = `${pinCoords.bl.x + canvasOffsetLeft}px`;
+            pins.bl.style.top = `${pinCoords.bl.y + canvasOffsetTop}px`;
 
-            // Diğer iki sanal köşeyi hesapla (Mükemmel dikdörtgen için)
-            const tr = { x: pinCoords.br.x + canvasOffsetLeft, y: pinCoords.tl.y + canvasOffsetTop };
-            const bl = { x: pinCoords.tl.x + canvasOffsetLeft, y: pinCoords.br.y + canvasOffsetTop };
             const tl = { x: pinCoords.tl.x + canvasOffsetLeft, y: pinCoords.tl.y + canvasOffsetTop };
+            const tr = { x: pinCoords.tr.x + canvasOffsetLeft, y: pinCoords.tr.y + canvasOffsetTop };
             const br = { x: pinCoords.br.x + canvasOffsetLeft, y: pinCoords.br.y + canvasOffsetTop };
+            const bl = { x: pinCoords.bl.x + canvasOffsetLeft, y: pinCoords.bl.y + canvasOffsetTop };
+
+            // Ortadaki Sürüklenebilir Alanı Güncelle
+            const pts = `${tl.x},${tl.y} ${tr.x},${tr.y} ${br.x},${br.y} ${bl.x},${bl.y}`;
+            boxFill.setAttribute('points', pts);
 
             // Çizgileri güncelle - Hepsi Sarı ve Net
             lineTop.setAttribute('x1', tl.x); lineTop.setAttribute('y1', tl.y);
@@ -494,12 +532,13 @@ html_code = """
             lineLeft.setAttribute('x2', tl.x); lineLeft.setAttribute('y2', tl.y);
 
             // Akıllı Fiziksel Mesafe/cm Hesaplama Formülü
-            // Kullanıcı alttaki slider ile mesafesini (kalibrasyonunu) anlık olarak ayarlar.
             const calibrationFactor = calibrationSlider.value / 350; // Standart referans katsayısı
+            calibRatioText.innerText = `x${calibrationFactor.toFixed(2)}`;
             const scaleFactor = (sourceCanvas.width / 100) * calibrationFactor;
 
-            const widthPx = Math.abs(pinCoords.br.x - pinCoords.tl.x);
-            const heightPx = Math.abs(pinCoords.br.y - pinCoords.tl.y);
+            // Hipotenüs formülü ile gerçek eğim açısına duyarlı mesafe hesabı
+            const widthPx = Math.hypot(pinCoords.tr.x - pinCoords.tl.x, pinCoords.tr.y - pinCoords.tl.y);
+            const heightPx = Math.hypot(pinCoords.br.x - pinCoords.tr.x, pinCoords.br.y - pinCoords.tr.y);
 
             // Pikselden gerçek santimetreye dönüştürme
             const widthCm = Math.round(widthPx / scaleFactor);
@@ -507,10 +546,10 @@ html_code = """
 
             // Ölçü Balonlarını Konumlandır ve cm Yaz
             badgeTop.style.left = `${(tl.x + tr.x) / 2}px`;
-            badgeTop.style.top = `${tl.y - 25}px`;
+            badgeTop.style.top = `${(tl.y + tr.y) / 2 - 25}px`;
             badgeTop.innerText = `${widthCm} cm`;
 
-            badgeRight.style.left = `${tr.x + 40}px`;
+            badgeRight.style.left = `${(tr.x + br.x) / 2 + 40}px`;
             badgeRight.style.top = `${(tr.y + br.y) / 2}px`;
             badgeRight.innerText = `${heightCm} cm`;
         }
@@ -518,13 +557,14 @@ html_code = """
         // Kalibrasyon Sürgüsü Değiştiğinde Ölçüleri Anlık Güncelle
         calibrationSlider.addEventListener('input', updateUI);
 
-        // Sürükleme ve Dokunma Kontrolleri
+        // 1. TEKLİ PİM SÜRÜKLEME KONTROLLERİ
         let activePin = null;
         
         document.querySelectorAll('.pin').forEach(pin => {
             pin.addEventListener('pointerdown', (e) => {
                 activePin = pin.getAttribute('data-id');
                 pin.setPointerCapture(e.pointerId);
+                e.stopPropagation();
             });
             
             pin.addEventListener('pointermove', (e) => {
@@ -542,6 +582,7 @@ html_code = """
                 pinCoords[activePin].y = y;
                 
                 updateUI();
+                e.stopPropagation();
             });
             
             pin.addEventListener('pointerup', (e) => {
@@ -559,6 +600,63 @@ html_code = """
             });
         });
 
+        // 2. ORTA ALANDAN TUTARAK KUTUYU KOMPLE TAŞIMA SİSTEMİ
+        let isDraggingBox = false;
+        let dragStartPointer = { x: 0, y: 0 };
+        let dragStartCoords = {};
+
+        boxFill.addEventListener('pointerdown', (e) => {
+            isDraggingBox = true;
+            dragStartPointer = { x: e.clientX, y: e.clientY };
+            // Sürükleme başlangıcındaki pim konumlarını kaydet
+            dragStartCoords = {
+                tl: { ...pinCoords.tl },
+                tr: { ...pinCoords.tr },
+                br: { ...pinCoords.br },
+                bl: { ...pinCoords.bl }
+            };
+            boxFill.setPointerCapture(e.pointerId);
+            e.stopPropagation();
+        });
+
+        boxFill.addEventListener('pointermove', (e) => {
+            if (!isDraggingBox) return;
+            
+            const dx = e.clientX - dragStartPointer.x;
+            const dy = e.clientY - dragStartPointer.y;
+
+            // Herhangi bir pimin canvas sınırlarının dışına çıkıp çıkmayacağını kontrol et
+            let canMove = true;
+            const keys = ['tl', 'tr', 'br', 'bl'];
+            
+            for (const key of keys) {
+                const targetX = dragStartCoords[key].x + dx;
+                const targetY = dragStartCoords[key].y + dy;
+                
+                if (targetX < 0 || targetX > sourceCanvas.width || targetY < 0 || targetY > sourceCanvas.height) {
+                    canMove = false;
+                    break;
+                }
+            }
+
+            // Sınırlar ihlal edilmediyse tüm pimleri topluca kaydır
+            if (canMove) {
+                for (const key of keys) {
+                    pinCoords[key].x = dragStartCoords[key].x + dx;
+                    pinCoords[key].y = dragStartCoords[key].y + dy;
+                }
+                updateUI();
+            }
+            e.stopPropagation();
+        });
+
+        boxFill.addEventListener('pointerup', (e) => {
+            if (isDraggingBox) {
+                boxFill.releasePointerCapture(e.pointerId);
+                isDraggingBox = false;
+            }
+        });
+
         // Kaydet Butonuna Basıldığında Görseli Birleştirip Paylaş / İndir
         document.getElementById('save-btn').addEventListener('click', async () => {
             const outCanvas = document.createElement('canvas');
@@ -574,9 +672,9 @@ html_code = """
             const scaleY = capturedImage.height / sourceCanvas.height;
             
             const tl = { x: pinCoords.tl.x * scaleX, y: pinCoords.tl.y * scaleY };
+            const tr = { x: pinCoords.tr.x * scaleX, y: pinCoords.tr.y * scaleY };
             const br = { x: pinCoords.br.x * scaleX, y: pinCoords.br.y * scaleY };
-            const tr = { x: br.x, y: tl.y };
-            const bl = { x: tl.x, y: br.y };
+            const bl = { x: pinCoords.bl.x * scaleX, y: pinCoords.bl.y * scaleY };
 
             // 2. Ölçü Çizgilerini Çiz
             ctx.strokeStyle = '#ffd60a';
@@ -595,8 +693,8 @@ html_code = """
             const calibrationFactor = calibrationSlider.value / 350;
             const finalScale = (capturedImage.width / 100) * calibrationFactor;
 
-            const wCm = Math.round(Math.abs(br.x - tl.x) / finalScale);
-            const hCm = Math.round(Math.abs(br.y - tl.y) / finalScale);
+            const wCm = Math.round(Math.hypot(tr.x - tl.x, tr.y - tl.y) / finalScale);
+            const hCm = Math.round(Math.hypot(br.x - tr.x, br.y - tr.y) / finalScale);
 
             // 3. Ölçü Etiketlerini Çiz
             const fontSize = Math.max(22, Math.round(capturedImage.width * 0.026));
@@ -605,9 +703,9 @@ html_code = """
             ctx.textBaseline = 'middle';
 
             // Üst Etiket
-            drawBadge(ctx, `${wCm} cm`, (tl.x + tr.x) / 2, tl.y - (fontSize * 1.3), fontSize);
+            drawBadge(ctx, `${wCm} cm`, (tl.x + tr.x) / 2, (tl.y + tr.y) / 2 - (fontSize * 1.3), fontSize);
             // Sağ Etiket
-            drawBadge(ctx, `${hCm} cm`, tr.x + (fontSize * 1.9), (tr.y + br.y) / 2, fontSize);
+            drawBadge(ctx, `${hCm} cm`, (tr.x + br.x) / 2 + (fontSize * 1.9), (tr.y + br.y) / 2, fontSize);
 
             const dataUrl = outCanvas.toDataURL('image/jpeg', 0.95);
 
