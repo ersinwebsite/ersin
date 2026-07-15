@@ -191,7 +191,7 @@ html_code = """
             touch-action: none;
         }
         
-        /* Ölçü Balonları */
+        /* Ölçü Balonları - Dönüş Desteği İçin İyileştirildi */
         .measure-badge {
             position: absolute;
             background: rgba(17, 17, 17, 0.9);
@@ -208,6 +208,8 @@ html_code = """
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             white-space: nowrap;
             z-index: 10;
+            transform-origin: center center;
+            transition: transform 0.1s ease; /* Akıcı yön değişimi */
         }
 
         /* Büyük Dokunmatik Alanlı Pim Tasarımları */
@@ -441,7 +443,6 @@ html_code = """
                     el.style.setProperty('visibility', 'hidden', 'important');
                 });
             } catch (e) {
-                // CORS veya tarayıcı kısıtlaması durumunda hata vermeden sessizce devam et
                 console.log("CORS engeli bypass edildi, sessiz mod aktif.");
             }
         }
@@ -548,6 +549,15 @@ html_code = """
             updateUI();
         }
 
+        // Yazıların her zaman göz hizasında (okunabilir açıda) kalmasını sağlayan akıllı fonksiyon
+        function getReadableAngle(angleRad) {
+            let angle = angleRad;
+            // Açıyı her zaman -90 ile +90 derece arasına normalize eder (Böylece asla baş aşağı dönmez)
+            while (angle > Math.PI / 2) angle -= Math.PI;
+            while (angle < -Math.PI / 2) angle += Math.PI;
+            return angle;
+        }
+
         function updateUI() {
             const canvasOffsetLeft = sourceCanvas.offsetLeft;
             const canvasOffsetTop = sourceCanvas.offsetTop;
@@ -599,14 +609,48 @@ html_code = """
             const widthCm = Math.round(widthPx / scaleFactor);
             const heightCm = Math.round(heightPx / scaleFactor);
 
-            // Ölçüm Balonları (Sadece Üst ve Sağ Kenar)
-            badgeTop.style.left = `${(tl.x + tr.x) / 2}px`;
-            badgeTop.style.top = `${(tl.y + tr.y) / 2 - 25}px`;
-            badgeTop.innerText = `${widthCm} cm`;
+            // Açı ve Kaydırma (Offset) Hesaplamaları
+            // ÜST KENAR (Top Line) - Paralel Açı ve Dik Kaydırma
+            const dxTop = tr.x - tl.x;
+            const dyTop = tr.y - tl.y;
+            const lenTop = Math.hypot(dxTop, dyTop) || 1;
+            const pxTop = -dyTop / lenTop; // Dik vektör x
+            const pyTop = dxTop / lenTop;  // Dik vektör y
+            
+            // Çizgiden 25 piksel yukarı kaydırılmış merkez koordinatı
+            const badgeTopX = (tl.x + tr.x) / 2 + pxTop * -25;
+            const badgeTopY = (tl.y + tr.y) / 2 + pyTop * -25;
+            
+            // Çizgi Açısı (Radyan ve Derece cinsinden)
+            const angleTopRad = Math.atan2(dyTop, dxTop);
+            const readableAngleTopRad = getReadableAngle(angleTopRad);
+            const degTop = readableAngleTopRad * 180 / Math.PI;
 
-            badgeRight.style.left = `${(tr.x + br.x) / 2 + 40}px`;
-            badgeRight.style.top = `${(tr.y + br.y) / 2}px`;
+            // SAĞ KENAR (Right Line) - Paralel Açı ve Dik Kaydırma
+            const dxRight = br.x - tr.x;
+            const dyRight = br.y - tr.y;
+            const lenRight = Math.hypot(dxRight, rdy = dyRight) || 1;
+            const pxRight = -dyRight / lenRight; // Dik vektör x
+            const pyRight = dxRight / lenRight;  // Dik vektör y
+            
+            // Çizgiden 35 piksel sağa kaydırılmış merkez koordinatı
+            const badgeRightX = (tr.x + br.x) / 2 + pxRight * 35;
+            const badgeRightY = (tr.y + br.y) / 2 + pyRight * 35;
+            
+            const angleRightRad = Math.atan2(dyRight, dxRight);
+            const readableAngleRightRad = getReadableAngle(angleRightRad);
+            const degRight = readableAngleRightRad * 180 / Math.PI;
+
+            // Ölçüm Balonlarının Konum ve Dönüşlerini Güncelle
+            badgeTop.style.left = `${badgeTopX}px`;
+            badgeTop.style.top = `${badgeTopY}px`;
+            badgeTop.innerText = `${widthCm} cm`;
+            badgeTop.style.transform = `translate(-50%, -50%) rotate(${degTop}deg)`;
+
+            badgeRight.style.left = `${badgeRightX}px`;
+            badgeRight.style.top = `${badgeRightY}px`;
             badgeRight.innerText = `${heightCm} cm`;
+            badgeRight.style.transform = `translate(-50%, -50%) rotate(${degRight}deg)`;
         }
 
         calibrationSlider.addEventListener('input', updateUI);
@@ -652,7 +696,6 @@ html_code = """
             });
         });
 
-        // Çokgen Orta Bölgesinden Komple Sürükleyip Taşıma Mantığı
         let isDraggingBox = false;
         let dragStartPointer = { x: 0, y: 0 };
         let dragStartCoords = {};
@@ -737,6 +780,7 @@ html_code = """
             const calibrationFactor = calibrationSlider.value / 350;
             const finalScale = (capturedImage.width / 100) * calibrationFactor;
 
+            // Kenar Uzunlukları
             const wCm = Math.round(Math.hypot(tr.x - tl.x, tr.y - tl.y) / finalScale);
             const hCm = Math.round(Math.hypot(br.x - tr.x, br.y - tr.y) / finalScale);
 
@@ -745,9 +789,32 @@ html_code = """
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // Ölçüm Balonlarını Fotoğrafa Kaydet
-            drawBadge(ctx, `${wCm} cm`, (tl.x + tr.x) / 2, (tl.y + tr.y) / 2 - (fontSize * 1.3), fontSize);
-            drawBadge(ctx, `${hCm} cm`, (tr.x + br.x) / 2 + (fontSize * 1.9), (tr.y + br.y) / 2, fontSize);
+            // Üst ve Sağ Açılı Kaydetme Hesaplamaları
+            // Üst kenar dik kaydırma ve açı hesapları (Büyük Kanvas İçin)
+            const dxTop = tr.x - tl.x;
+            const dyTop = tr.y - tl.y;
+            const lenTop = Math.hypot(dxTop, dyTop) || 1;
+            const pxTop = -dyTop / lenTop;
+            const pyTop = dxTop / lenTop;
+            
+            const badgeTopX = (tl.x + tr.x) / 2 + pxTop * -(fontSize * 1.5);
+            const badgeTopY = (tl.y + tr.y) / 2 + pyTop * -(fontSize * 1.5);
+            const angleTopRad = getReadableAngle(Math.atan2(dyTop, dxTop));
+
+            // Sağ kenar dik kaydırma ve açı hesapları (Büyük Kanvas İçin)
+            const dxRight = br.x - tr.x;
+            const dyRight = br.y - tr.y;
+            const lenRight = Math.hypot(dxRight, dyRight) || 1;
+            const pxRight = -dyRight / lenRight;
+            const pyRight = dxRight / lenRight;
+            
+            const badgeRightX = (tr.x + br.x) / 2 + pxRight * (fontSize * 1.8);
+            const badgeRightY = (tr.y + br.y) / 2 + pyRight * (fontSize * 1.8);
+            const angleRightRad = getReadableAngle(Math.atan2(dyRight, dxRight));
+
+            // Ölçüm Balonlarını Fotoğrafa Açılı Kaydet
+            drawBadge(ctx, `${wCm} cm`, badgeTopX, badgeTopY, fontSize, angleTopRad);
+            drawBadge(ctx, `${hCm} cm`, badgeRightX, badgeRightY, fontSize, angleRightRad);
 
             const dataUrl = outCanvas.toDataURL('image/jpeg', 0.95);
 
@@ -778,8 +845,12 @@ html_code = """
             document.body.removeChild(downloadLink);
         });
 
-        // Şık Ölçü Kutucuğu Çizim Fonksiyonu
-        function drawBadge(ctx, text, x, y, fontSize) {
+        // Şık Ölçü Kutucuğu Çizim Fonksiyonu (Dönüş Açısı Destekli)
+        function drawBadge(ctx, text, x, y, fontSize, angleRad) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angleRad); // Çizginin açısına göre döndür
+
             const paddingH = fontSize * 0.8;
             const paddingV = fontSize * 0.4;
             const textWidth = ctx.measureText(text).width;
@@ -787,7 +858,7 @@ html_code = """
             const rectH = fontSize + (paddingV * 2);
             
             ctx.fillStyle = 'rgba(17, 17, 17, 0.95)';
-            roundRect(ctx, x - (rectW / 2), y - (rectH / 2), rectW, rectH, rectH / 2);
+            roundRect(ctx, -(rectW / 2), -(rectH / 2), rectW, rectH, rectH / 2);
             ctx.fill();
             
             ctx.strokeStyle = '#ffd60a';
@@ -795,7 +866,8 @@ html_code = """
             ctx.stroke();
             
             ctx.fillStyle = '#ffd60a';
-            ctx.fillText(text, x, y);
+            ctx.fillText(text, 0, 0);
+            ctx.restore();
         }
 
         function roundRect(ctx, x, y, width, height, radius) {
@@ -818,10 +890,19 @@ html_code = """
             camScreen.classList.add('active');
         });
         
+        // Ekran döndüğünde arayüzü ve açıları yeniden ölçeklendir/güncelle
         window.addEventListener('resize', () => {
             if (measureScreen.classList.contains('active')) {
                 showMeasureScreen();
             }
+        });
+
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                if (measureScreen.classList.contains('active')) {
+                    showMeasureScreen();
+                }
+            }, 250);
         });
 
         lucide.createIcons();
