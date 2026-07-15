@@ -1,1 +1,5 @@
-streamlitopencv-python-headlessnumpyPillow
+streamlit
+opencv
+headless
+numpy
+Pillow
