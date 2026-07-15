@@ -23,15 +23,15 @@ st.markdown("""
         .stAppDeployButton {visibility: hidden !important; display: none !important;}
         [data-testid="stConnectionStatus"] {visibility: hidden !important; display: none !important;}
         
-        /* Sayfa yapısındaki tüm gereksiz boşlukları tamamen sıfırla */
-        .block-container {
-            padding-top: 0rem !important;
-            padding-bottom: 0rem !important;
-            padding-left: 0rem !important;
-            padding-right: 0rem !important;
-            max-width: 100% !important;
+        /* Sayfa yapısındaki tüm gereksiz boşlukları ve kaydırma özelliklerini tamamen sıfırla */
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stAppViewBlockContainer"], [data-testid="stApp"], .main, .block-container, div[data-testid="stHtml"] {
+            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
             height: 100vh !important;
             width: 100vw !important;
+            max-height: 100vh !important;
+            max-width: 100vw !important;
         }
         
         /* BEYAZ EKRAN ÇÖZÜMÜ: Sadece bizim kendi HTML ölçüm arayüzümüzün iframini tam ekran yap */
@@ -82,6 +82,7 @@ html_code = """
             background-color: #000;
             overflow: hidden;
             color: #fff;
+            touch-action: none; /* Sayfanın aşağı yukarı kaydırılmasını (bounce/esneme) tamamen engeller */
         }
         
         .screen {
@@ -433,6 +434,13 @@ html_code = """
                         
                         /* Sağ alttaki inatçı buton iframe'lerini yok et */
                         iframe[title*="ViewerBadge"] { display: none !important; visibility: hidden !important; }
+                        
+                        /* Parent sayfa üzerinde dikey kaydırma engelleme */
+                        html, body, [data-testid="stAppViewContainer"], .main, .block-container {
+                            overflow: hidden !important;
+                            height: 100vh !important;
+                            max-height: 100vh !important;
+                        }
                     `;
                     topDoc.head.appendChild(styleEl);
                 }
@@ -485,7 +493,6 @@ html_code = """
 
         let capturedImage = new Image();
 
-        // Arka kamerayı öncelikli başlat
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
