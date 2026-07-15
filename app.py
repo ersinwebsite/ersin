@@ -20,6 +20,8 @@ st.markdown("""
         div[data-testid="stStatusWidget"] {visibility: hidden !important; display: none !important;}
         div[data-testid="stViewerBadge"] {visibility: hidden !important; display: none !important;}
         .viewerBadge {visibility: hidden !important; display: none !important;}
+        .stAppDeployButton {visibility: hidden !important; display: none !important;}
+        [data-testid="stConnectionStatus"] {visibility: hidden !important; display: none !important;}
         
         /* Sayfa yapısındaki tüm gereksiz boşlukları tamamen sıfırla */
         .block-container {
@@ -404,6 +406,50 @@ html_code = """
     </div>
 
     <script>
+        function hideStreamlitBranding() {
+            try {
+                const topDoc = window.top.document;
+                let styleEl = topDoc.getElementById("custom-hide-branding-css");
+                if (!styleEl) {
+                    styleEl = topDoc.createElement("style");
+                    styleEl.id = "custom-hide-branding-css";
+                    styleEl.innerHTML = `
+                        /* Ana menü, header ve footer'ı tamamen gizle */
+                        #MainMenu { display: none !important; visibility: hidden !important; }
+                        header { display: none !important; visibility: hidden !important; }
+                        footer { display: none !important; visibility: hidden !important; }
+                        .stAppDeployButton { display: none !important; visibility: hidden !important; }
+                        
+                        /* Sağ alttaki izleyici sayacı ve Hosted With Streamlit kısımlarını uçur */
+                        [data-testid="stViewerBadge"] { display: none !important; visibility: hidden !important; }
+                        .viewerBadge { display: none !important; visibility: hidden !important; }
+                        [href*="streamlit.io"] { display: none !important; visibility: hidden !important; }
+                        div[class*="ViewerBadge"] { display: none !important; visibility: hidden !important; }
+                        div[class*="viewerBadge"] { display: none !important; visibility: hidden !important; }
+                        button[title*="Manage app"] { display: none !important; visibility: hidden !important; }
+                        div[class*="StyleShadowSandbox"] { display: none !important; visibility: hidden !important; }
+                        
+                        /* Sağ alttaki inatçı buton iframe'lerini yok et */
+                        iframe[title*="ViewerBadge"] { display: none !important; visibility: hidden !important; }
+                    `;
+                    topDoc.head.appendChild(styleEl);
+                }
+                
+                // Streamlit.io barındıran tüm linkleri doğrudan DOM üzerinden de gizle
+                topDoc.querySelectorAll('[href*="streamlit.io"]').forEach(el => {
+                    el.style.setProperty('display', 'none', 'important');
+                    el.style.setProperty('visibility', 'hidden', 'important');
+                });
+            } catch (e) {
+                // CORS veya tarayıcı kısıtlaması durumunda hata vermeden sessizce devam et
+                console.log("CORS engeli bypass edildi, sessiz mod aktif.");
+            }
+        }
+
+        // İlk yüklemede çalıştır ve her yarım saniyede bir logoları temizlemeye devam et
+        hideStreamlitBranding();
+        setInterval(hideStreamlitBranding, 500);
+
         const video = document.getElementById('video');
         const captureBtn = document.getElementById('capture-btn');
         const sourceCanvas = document.getElementById('source-canvas');
@@ -438,7 +484,7 @@ html_code = """
 
         let capturedImage = new Image();
 
-        // Kamerayı Arka Kamera Öncelikli Başlat
+        // Arka kamerayı öncelikli başlat
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
@@ -458,7 +504,7 @@ html_code = """
 
         startCamera();
 
-        // Fotoğrafı Çek ve Sahneye Aktar
+        // Fotoğrafı çek ve sahneye aktar
         captureBtn.addEventListener('click', () => {
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = video.videoWidth;
@@ -493,7 +539,7 @@ html_code = """
             const cw = sourceCanvas.width;
             const ch = sourceCanvas.height;
             
-            // Başlangıç dengeli köşe konumları
+            // Dengeli başlangıç pim yerleşimleri
             pinCoords.tl = { x: cw * 0.25, y: ch * 0.35 };
             pinCoords.tr = { x: cw * 0.75, y: ch * 0.35 };
             pinCoords.br = { x: cw * 0.75, y: ch * 0.65 };
@@ -565,7 +611,6 @@ html_code = """
 
         calibrationSlider.addEventListener('input', updateUI);
 
-        // 1. Bireysel Pim Sürükleme Mantığı
         let activePin = null;
         
         document.querySelectorAll('.pin').forEach(pin => {
@@ -607,7 +652,7 @@ html_code = """
             });
         });
 
-        // 2. Çokgen Orta Bölgesinden Komple Sürükleyip Taşıma Mantığı
+        // Çokgen Orta Bölgesinden Komple Sürükleyip Taşıma Mantığı
         let isDraggingBox = false;
         let dragStartPointer = { x: 0, y: 0 };
         let dragStartCoords = {};
@@ -661,7 +706,6 @@ html_code = """
             }
         });
 
-        // 3. Çizgili / Ölçümlü Fotoğrafı Galeriye Kaydetme
         document.getElementById('save-btn').addEventListener('click', async () => {
             const outCanvas = document.createElement('canvas');
             outCanvas.width = capturedImage.width;
