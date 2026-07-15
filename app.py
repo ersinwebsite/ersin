@@ -23,15 +23,27 @@ st.markdown("""
         .stAppDeployButton {visibility: hidden !important; display: none !important;}
         [data-testid="stConnectionStatus"] {visibility: hidden !important; display: none !important;}
         
-        /* Sayfa yapısındaki tüm gereksiz boşlukları ve kaydırma özelliklerini tamamen sıfırla */
-        html, body, [data-testid="stAppViewContainer"], [data-testid="stAppViewBlockContainer"], [data-testid="stApp"], .main, .block-container, div[data-testid="stHtml"] {
+        /* Sayfa yapısını tamamen kilitle ve yukarı aşağı kaydırmayı tamamen kapat - dvh (dynamic viewport) kullanımı */
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stMainBlockContainer"], .main, .stApp, .block-container {
             overflow: hidden !important;
             margin: 0 !important;
             padding: 0 !important;
             height: 100vh !important;
+            height: 100dvh !important;
             width: 100vw !important;
-            max-height: 100vh !important;
-            max-width: 100vw !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+        }
+        
+        /* HTML sarmalayıcısının gereksiz kaydırma çubukları üretmesini engelle */
+        div[data-testid="stHtml"] {
+            width: 100vw !important;
+            height: 100vh !important;
+            height: 100dvh !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
         
         /* BEYAZ EKRAN ÇÖZÜMÜ: Sadece bizim kendi HTML ölçüm arayüzümüzün iframini tam ekran yap */
@@ -41,19 +53,13 @@ st.markdown("""
             left: 0 !important;
             width: 100vw !important;
             height: 100vh !important;
+            height: 100dvh !important;
             border: none !important;
             margin: 0 !important;
             padding: 0 !important;
             overflow: hidden !important;
             z-index: 999999 !important;
             background-color: #000000 !important;
-        }
-        
-        body {
-            background-color: #000000 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: hidden !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -74,15 +80,20 @@ html_code = """
             -webkit-user-select: none;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
+        
+        /* Sayfanın hiçbir koşulda kaydırılamaması için pozisyonu kilitle */
         html, body {
             margin: 0;
             padding: 0;
             width: 100%;
-            height: 100%;
+            height: 100vh;
+            height: 100dvh;
             background-color: #000;
             overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
             color: #fff;
-            touch-action: none; /* Sayfanın aşağı yukarı kaydırılmasını (bounce/esneme) tamamen engeller */
         }
         
         .screen {
@@ -120,7 +131,10 @@ html_code = """
             flex-direction: column;
             justify-content: flex-end;
             padding: 40px 20px;
+            /* iPhone alt çizgi / Safe Area koruması */
+            padding-bottom: calc(40px + env(safe-area-inset-bottom));
             pointer-events: none;
+            z-index: 100;
         }
         .shutter-container {
             width: 100%;
@@ -192,7 +206,7 @@ html_code = """
             touch-action: none;
         }
         
-        /* Ölçü Balonları - Dönüş Desteği İçin İyileştirildi */
+        /* Ölçü Balonları - Çizgiden dışarıda ve dönmeye duyarlı */
         .measure-badge {
             position: absolute;
             background: rgba(17, 17, 17, 0.9);
@@ -210,7 +224,7 @@ html_code = """
             white-space: nowrap;
             z-index: 10;
             transform-origin: center center;
-            transition: transform 0.1s ease; /* Akıcı yön değişimi */
+            transition: transform 0.1s ease;
         }
 
         /* Büyük Dokunmatik Alanlı Pim Tasarımları */
@@ -228,7 +242,7 @@ html_code = """
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 20;
+            z-index: 120;
         }
         .pin:active {
             cursor: grabbing;
@@ -262,7 +276,7 @@ html_code = """
             width: 85%;
             max-width: 340px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            z-index: 30;
+            z-index: 130;
             pointer-events: auto;
         }
         .calibration-title {
@@ -305,12 +319,14 @@ html_code = """
         .action-overlay {
             position: absolute;
             bottom: 30px;
+            /* iPhone alt çizgi / Safe Area koruması */
+            bottom: calc(30px + env(safe-area-inset-bottom));
             width: 100%;
             display: flex;
             justify-content: space-between;
             padding: 0 30px;
             pointer-events: none;
-            z-index: 30;
+            z-index: 150;
         }
         .btn-circle {
             width: 60px;
@@ -385,7 +401,7 @@ html_code = """
                     <line id="line-left" stroke="#ffd60a" stroke-width="3" stroke-dasharray="6,6" />
                 </svg>
                 
-                <!-- Ölçüm Etiketleri (Sadece Üst ve Sağ Kenar İçin) -->
+                <!-- Ölçüm Etiketleri (Sadece Üst ve Sağ Kenar İçin, Çizgilerin Dışına Kaydırılacak) -->
                 <div class="measure-badge" id="badge-top">0 cm</div>
                 <div class="measure-badge" id="badge-right">0 cm</div>
 
@@ -434,13 +450,6 @@ html_code = """
                         
                         /* Sağ alttaki inatçı buton iframe'lerini yok et */
                         iframe[title*="ViewerBadge"] { display: none !important; visibility: hidden !important; }
-                        
-                        /* Parent sayfa üzerinde dikey kaydırma engelleme */
-                        html, body, [data-testid="stAppViewContainer"], .main, .block-container {
-                            overflow: hidden !important;
-                            height: 100vh !important;
-                            max-height: 100vh !important;
-                        }
                     `;
                     topDoc.head.appendChild(styleEl);
                 }
@@ -493,6 +502,7 @@ html_code = """
 
         let capturedImage = new Image();
 
+        // Arka kamerayı öncelikli başlat
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
@@ -559,7 +569,7 @@ html_code = """
         // Yazıların her zaman göz hizasında (okunabilir açıda) kalmasını sağlayan akıllı fonksiyon
         function getReadableAngle(angleRad) {
             let angle = angleRad;
-            // Açıyı her zaman -90 ile +90 derece arasına normalize eder (Böylece asla baş aşağı dönmez)
+            // Açıyı her zaman -90 ile +90 derece arasına normalize eder (Böylece asla baş asağı dönmez)
             while (angle > Math.PI / 2) angle -= Math.PI;
             while (angle < -Math.PI / 2) angle += Math.PI;
             return angle;
@@ -935,5 +945,5 @@ html_code = """
 </html>
 """
 
-# HTML Bileşenini Tam Ekran ve Kusursuz Şekilde Render Et
+# HTML Bileşenini Tam Ekran ve Kusursuz Şekilde Render Et - 1000 yüksekliği dynamic CSS ile ezilir
 components.html(html_code, height=1000, scrolling=False)
