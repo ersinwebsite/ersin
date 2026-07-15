@@ -609,33 +609,43 @@ html_code = """
             const widthCm = Math.round(widthPx / scaleFactor);
             const heightCm = Math.round(heightPx / scaleFactor);
 
-            // Açı ve Kaydırma (Offset) Hesaplamaları
-            // ÜST KENAR (Top Line) - Paralel Açı ve Dik Kaydırma
+            // Merkez koordinatı (Kutunun içi)
+            const centerX = (tl.x + tr.x + br.x + bl.x) / 4;
+            const centerY = (tl.y + tr.y + br.y + bl.y) / 4;
+
+            // ÜST KENAR (Top Line) - Dışarı Doğru İtme
             const dxTop = tr.x - tl.x;
             const dyTop = tr.y - tl.y;
-            const lenTop = Math.hypot(dxTop, dyTop) || 1;
-            const pxTop = -dyTop / lenTop; // Dik vektör x
-            const pyTop = dxTop / lenTop;  // Dik vektör y
+            const midTopX = (tl.x + tr.x) / 2;
+            const midTopY = (tl.y + tr.y) / 2;
             
-            // Çizgiden 25 piksel yukarı kaydırılmış merkez koordinatı
-            const badgeTopX = (tl.x + tr.x) / 2 + pxTop * -25;
-            const badgeTopY = (tl.y + tr.y) / 2 + pyTop * -25;
+            // Merkezden üst kenar merkezine giden vektör (dışarıya doğru yön)
+            const dirTopX = midTopX - centerX;
+            const dirTopY = midTopY - centerY;
+            const lenTopDir = Math.hypot(dirTopX, dirTopY) || 1;
             
-            // Çizgi Açısı (Radyan ve Derece cinsinden)
+            // 30 piksel dışarı kaydırılmış koordinat
+            const badgeTopX = midTopX + (dirTopX / lenTopDir) * 30;
+            const badgeTopY = midTopY + (dirTopY / lenTopDir) * 30;
+            
             const angleTopRad = Math.atan2(dyTop, dxTop);
             const readableAngleTopRad = getReadableAngle(angleTopRad);
             const degTop = readableAngleTopRad * 180 / Math.PI;
 
-            // SAĞ KENAR (Right Line) - Paralel Açı ve Dik Kaydırma
+            // SAĞ KENAR (Right Line) - Dışarı Doğru İtme
             const dxRight = br.x - tr.x;
             const dyRight = br.y - tr.y;
-            const lenRight = Math.hypot(dxRight, rdy = dyRight) || 1;
-            const pxRight = -dyRight / lenRight; // Dik vektör x
-            const pyRight = dxRight / lenRight;  // Dik vektör y
+            const midRightX = (tr.x + br.x) / 2;
+            const midRightY = (tr.y + br.y) / 2;
             
-            // Çizgiden 35 piksel sağa kaydırılmış merkez koordinatı
-            const badgeRightX = (tr.x + br.x) / 2 + pxRight * 35;
-            const badgeRightY = (tr.y + br.y) / 2 + pyRight * 35;
+            // Merkezden sağ kenar merkezine giden vektör (dışarıya doğru yön)
+            const dirRightX = midRightX - centerX;
+            const dirRightY = midRightY - centerY;
+            const lenRightDir = Math.hypot(dirRightX, dirRightY) || 1;
+            
+            // 30 piksel dışarı kaydırılmış koordinat
+            const badgeRightX = midRightX + (dirRightX / lenRightDir) * 30;
+            const badgeRightY = midRightY + (dirRightY / lenRightDir) * 30;
             
             const angleRightRad = Math.atan2(dyRight, dxRight);
             const readableAngleRightRad = getReadableAngle(angleRightRad);
@@ -789,27 +799,34 @@ html_code = """
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // Üst ve Sağ Açılı Kaydetme Hesaplamaları
-            // Üst kenar dik kaydırma ve açı hesapları (Büyük Kanvas İçin)
+            // Büyük Kanvas İçin Dışarı İtme Hesaplamaları (Kutunun Merkezine Göre)
+            const centerX = (tl.x + tr.x + br.x + bl.x) / 4;
+            const centerY = (tl.y + tr.y + br.y + bl.y) / 4;
+
+            // Üst kenar
             const dxTop = tr.x - tl.x;
             const dyTop = tr.y - tl.y;
-            const lenTop = Math.hypot(dxTop, dyTop) || 1;
-            const pxTop = -dyTop / lenTop;
-            const pyTop = dxTop / lenTop;
+            const midTopX = (tl.x + tr.x) / 2;
+            const midTopY = (tl.y + tr.y) / 2;
+            const dirTopX = midTopX - centerX;
+            const dirTopY = midTopY - centerY;
+            const lenTopDir = Math.hypot(dirTopX, dirTopY) || 1;
             
-            const badgeTopX = (tl.x + tr.x) / 2 + pxTop * -(fontSize * 1.5);
-            const badgeTopY = (tl.y + tr.y) / 2 + pyTop * -(fontSize * 1.5);
+            const badgeTopX = midTopX + (dirTopX / lenTopDir) * (fontSize * 1.5);
+            const badgeTopY = midTopY + (dirTopY / lenTopDir) * (fontSize * 1.5);
             const angleTopRad = getReadableAngle(Math.atan2(dyTop, dxTop));
 
-            // Sağ kenar dik kaydırma ve açı hesapları (Büyük Kanvas İçin)
+            // Sağ kenar
             const dxRight = br.x - tr.x;
             const dyRight = br.y - tr.y;
-            const lenRight = Math.hypot(dxRight, dyRight) || 1;
-            const pxRight = -dyRight / lenRight;
-            const pyRight = dxRight / lenRight;
+            const midRightX = (tr.x + br.x) / 2;
+            const midRightY = (tr.y + br.y) / 2;
+            const dirRightX = midRightX - centerX;
+            const dirRightY = midRightY - centerY;
+            const lenRightDir = Math.hypot(dirRightX, dirRightY) || 1;
             
-            const badgeRightX = (tr.x + br.x) / 2 + pxRight * (fontSize * 1.8);
-            const badgeRightY = (tr.y + br.y) / 2 + pyRight * (fontSize * 1.8);
+            const badgeRightX = midRightX + (dirRightX / lenRightDir) * (fontSize * 1.5);
+            const badgeRightY = midRightY + (dirRightY / lenRightDir) * (fontSize * 1.5);
             const angleRightRad = getReadableAngle(Math.atan2(dyRight, dxRight));
 
             // Ölçüm Balonlarını Fotoğrafa Açılı Kaydet
