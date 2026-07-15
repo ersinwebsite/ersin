@@ -71,8 +71,6 @@ html_code = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Tabela Ölçer</title>
-    <!-- Lucide Ikon Kütüphanesi -->
-    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -353,6 +351,24 @@ html_code = """
             color: #000;
             border: none;
         }
+        .icon-svg {
+            width: 26px;
+            height: 26px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .icon-svg-small {
+            width: 16px;
+            height: 16px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
     </style>
 </head>
 <body>
@@ -382,9 +398,11 @@ html_code = """
                     <span id="calib-ratio-text" style="color:#fff; font-weight:800; background:rgba(255,255,255,0.15); padding:1px 6px; border-radius:10px; font-size:10px;">x1.00</span>
                 </div>
                 <div class="slider-wrapper">
-                    <i data-lucide="minus" style="width: 16px; height: 16px; color: #fff;"></i>
+                    <!-- SAF INLINE SVG MINUS İKONU -->
+                    <svg class="icon-svg-small" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                     <input type="range" id="calibration-slider" min="100" max="600" value="300" class="modern-slider">
-                    <i data-lucide="plus" style="width: 16px; height: 16px; color: #fff;"></i>
+                    <!-- SAF INLINE SVG PLUS İKONU -->
+                    <svg class="icon-svg-small" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 </div>
             </div>
 
@@ -414,11 +432,15 @@ html_code = """
             
             <!-- Alt Aksiyon Butonları -->
             <div class="action-overlay">
+                <!-- GERİ DÖN BUTONU -->
                 <button class="btn-circle" id="back-to-cam" title="Geri Dön">
-                    <i data-lucide="arrow-left" style="width: 26px; height: 26px;"></i>
+                    <!-- SAF INLINE SVG ARROW-LEFT İKONU -->
+                    <svg class="icon-svg" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                 </button>
+                <!-- KAYDET BUTONU -->
                 <button class="btn-circle success" id="save-btn" title="Kaydet">
-                    <i data-lucide="download" style="width: 26px; height: 26px;"></i>
+                    <!-- SAF INLINE SVG DOWNLOAD İKONU -->
+                    <svg class="icon-svg" viewBox="0 0 24 24" style="stroke: #000;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 </button>
             </div>
         </div>
@@ -502,7 +524,6 @@ html_code = """
 
         let capturedImage = new Image();
 
-        // Arka kamerayı öncelikli başlat
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
@@ -938,8 +959,6 @@ html_code = """
                 }
             }, 250);
         });
-
-        lucide.createIcons();
     </script>
 </body>
 </html>
