@@ -1,138 +1,107 @@
 import streamlit as st
-from PIL import Image
+from PIL import Image, ImageDraw
 import io
-import base64
-from streamlit_drawable_canvas import st_canvas
-import numpy as np
 import datetime
 
 st.set_page_config(
-    page_title="Tabela Ölçüm",
+    page_title="Tabela Ölçer",
     page_icon="📏",
     layout="wide",
-    initial_sidebar_state="collapsed"  # Mobile dostu
+    initial_sidebar_state="collapsed"
 )
 
-# CSS ile mobil tam ekran ve basit UI
+# Mobil tam ekran iyileştirmesi
 st.markdown("""
 <style>
-    .main .block-container {
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-    }
-    button {
-        width: 100%;
-    }
-    .stCanvas {
-        max-height: 70vh;
-    }
+    .main .block-container {padding-top: 0.5rem; padding-bottom: 0rem;}
+    button[kind="primary"] {width: 100% !important;}
 </style>
 """, unsafe_allow_html=True)
 
 st.title("📏 Tabela Ölçüm Uygulaması")
-st.markdown("Telefon kamerası ile tabela fotoğraflayın, çizgilerle ölçüm yapın ve kaydedin.")
+st.caption("Telefon kamerasıyla tabela ölçümü • Çizgi + Oran")
 
-# Session state
-if 'captured_image' not in st.session_state:
-    st.session_state.captured_image = None
-if 'canvas_result' not in st.session_state:
-    st.session_state.canvas_result = None
+# Session State
+if 'photo' not in st.session_state:
+    st.session_state.photo = None
+if 'last_canvas' not in st.session_state:
+    st.session_state.last_canvas = None
 
-col1, col2 = st.columns([3, 2])
+col_camera, col_edit = st.columns([1.8, 1])
 
-with col1:
+with col_camera:
     st.subheader("📸 Kamera")
-    camera_input = st.camera_input("Fotoğraf Çek", key="camera")
-
-    if camera_input is not None:
-        st.session_state.captured_image = camera_input
-        st.success("Fotoğraf çekildi! Sağ tarafta düzenleyin.")
-
-with col2:
-    st.subheader("✏️ Düzenleme ve Ölçüm")
+    photo = st.camera_input("Tabelayı fotoğrafla", key="cam_input")
     
-    if st.session_state.captured_image is not None:
-        # PIL Image'e çevir
-        image = Image.open(st.session_state.captured_image)
+    if photo is not None:
+        st.session_state.photo = photo
+        st.success("✅ Fotoğraf yüklendi. Sağ tarafta düzenleyin.")
+
+with col_edit:
+    st.subheader("✏️ Çizim & Ölçüm")
+    
+    if st.session_state.photo is not None:
+        img = Image.open(st.session_state.photo)
         
-        # Canvas ayarları
-        drawing_mode = st.selectbox(
-            "Çizim Modu",
-            ("line", "freedraw", "rect", "circle", "transform")
-        )
+        # Çizim ayarları
+        mode = st.selectbox("Araç", ["line", "rect", "freedraw", "circle", "transform"], index=0)
+        stroke_w = st.slider("Kalınlık", 2, 15, 5)
+        color = st.color_picker("Renk", "#FF0000")
         
-        stroke_width = st.slider("Çizgi Kalınlığı", 1, 20, 5)
-        stroke_color = st.color_picker("Çizgi Rengi", "#FF0000")
+        from streamlit_drawable_canvas import st_canvas
         
-        # Canvas
         canvas_result = st_canvas(
-            fill_color="rgba(255, 165, 0, 0.3)",
-            stroke_width=stroke_width,
-            stroke_color=stroke_color,
-            background_image=image,
+            background_image=img,
+            height=int(img.height * 0.75),
+            width=int(img.width * 0.75),
+            drawing_mode=mode,
+            stroke_width=stroke_w,
+            stroke_color=color,
+            fill_color="rgba(255,165,0,0.2)",
             update_streamlit=True,
-            height=int(image.height * 0.8),  # Oranlı
-            width=int(image.width * 0.8),
-            drawing_mode=drawing_mode,
-            key="canvas_key",
+            key="canvas",
         )
         
-        st.session_state.canvas_result = canvas_result
+        st.session_state.last_canvas = canvas_result
         
-        # Ölçüm notları
-        st.subheader("📝 Ölçüm Bilgileri")
-        width_ratio = st.number_input("Genişlik Oranı (ör: 1.5)", value=1.0, step=0.1)
-        height_ratio = st.number_input("Yükseklik Oranı (ör: 2.0)", value=1.0, step=0.1)
-        notes = st.text_area("Notlar (tabela metni, konum vb.)", "")
+        # Ölçüm girdileri
+        st.subheader("📐 Ölçümler")
+        col_w, col_h = st.columns(2)
+        with col_w:
+            width_ratio = st.number_input("Genişlik (m)", value=1.5, step=0.1)
+        with col_h:
+            height_ratio = st.number_input("Yükseklik (m)", value=2.0, step=0.1)
         
-        # Kaydet
+        notes = st.text_area("Notlar / Tabela Metni", placeholder="Örn: Cadde adı, tarih...")
+        
         if st.button("💾 Kaydet ve İndir", type="primary"):
-            if canvas_result.image_data is not None:
-                # Annotated image
-                annotated_img = Image.fromarray(canvas_result.image_data.astype("uint8"))
+            if canvas_result and canvas_result.image_data is not None:
+                annotated = Image.fromarray(canvas_result.image_data.astype("uint8"))
                 
-                # Metadata ekle
-                draw = ImageDraw.Draw(annotated_img) if 'ImageDraw' in globals() else None
+                # Basit metadata overlay
+                draw = ImageDraw.Draw(annotated)
+                draw.text((10, 10), f"W:{width_ratio}m H:{height_ratio}m", fill="#00FF00")
                 
-                # Bytes olarak kaydet
                 buf = io.BytesIO()
-                annotated_img.save(buf, format="PNG")
+                annotated.save(buf, format="PNG")
                 buf.seek(0)
                 
-                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                filename = f"tabela_olcumu_{timestamp}.png"
+                ts = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+                filename = f"tabela_olcumu_{ts}.png"
                 
                 st.download_button(
-                    label="📥 İndir (PNG)",
+                    "📥 PNG İndir",
                     data=buf,
                     file_name=filename,
-                    mime="image/png",
+                    mime="image/png"
                 )
                 
-                # JSON verisi (ölçümler)
-                if canvas_result.json_data:
-                    st.json({
-                        "width_ratio": width_ratio,
-                        "height_ratio": height_ratio,
-                        "notes": notes,
-                        "objects": canvas_result.json_data.get("objects", [])
-                    })
-                
-                st.success("Kaydedildi! İndirin.")
+                st.success("Kaydedildi!")
+                st.balloons()
             else:
-                st.warning("Değişiklik yapın.")
+                st.warning("Önce bir çizim yapın.")
     else:
-        st.info("Önce sol taraftan fotoğraf çekin.")
+        st.info("← Sol taraftan fotoğraf çekin")
 
-# Ekstra talimatlar
-st.markdown("---")
-st.markdown("""
-### Nasıl Kullanılır?
-1. **Mobil tarayıcıda** (Chrome önerilir) tam ekran yapın.
-2. Kamera ile tabela fotoğrafı çekin.
-3. Sağ tarafta **line** modu ile kenarlara çizgi çekin (ölçüm referansı).
-4. Manuel ölçüm oranlarını girin.
-5. **Kaydet** ile PNG indirin (telefonunuza kaydedin).
-""")
-
-st.caption("GitHub'a yüklemek için app.py olarak kaydedin. requirements.txt: streamlit, streamlit-drawable-canvas, pillow")
+st.divider()
+st.markdown("**İpuçları:**\n- Line/Rect ile tabela kenarlarını işaretleyin\n- Ölçümleri manuel girin\n- Chrome'da tam ekran kullanın")
