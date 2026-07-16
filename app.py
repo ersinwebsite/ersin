@@ -1,56 +1,35 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# Sayfa Yapılandırması
 st.set_page_config(
     page_title="Tabela Ölçer PRO",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Streamlit arayüzünü temizle ve tam ekran yap
+# Güçlü Temizleme + Buton Görünürlüğü
 st.markdown("""
     <style>
-        #MainMenu {visibility: hidden !important; display: none !important;}
-        header {visibility: hidden !important; display: none !important;}
-        footer {visibility: hidden !important; display: none !important;}
-        div[data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
-        div[data-testid="stDecoration"] {visibility: hidden !important; display: none !important;}
-        div[data-testid="stStatusWidget"] {visibility: hidden !important; display: none !important;}
-        div[data-testid="stViewerBadge"] {visibility: hidden !important; display: none !important;}
-        .stAppDeployButton {visibility: hidden !important; display: none !important;}
-        [data-testid="stConnectionStatus"] {visibility: hidden !important; display: none !important;}
+        #MainMenu, header, footer, [data-testid="stToolbar"], 
+        [data-testid="stDecoration"], [data-testid="stStatusWidget"], 
+        [data-testid="stViewerBadge"], .stAppDeployButton {display: none !important;}
 
-        /* Tam ekran kilidi */
-        html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"],
-        [data-testid="stMainBlockContainer"], .main, .stApp, .block-container {
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
             overflow: hidden !important;
-            margin: 0 !important;
-            padding: 0 !important;
             height: 100vh !important;
             height: 100dvh !important;
-            width: 100vw !important;
-        }
-
-        div[data-testid="stHtml"] {
-            width: 100vw !important;
-            height: 100vh !important;
-            height: 100dvh !important;
-            overflow: hidden !important;
-            margin: 0 !important;
-            padding: 0 !important;
         }
 
         div[data-testid="stHtml"] iframe {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
             width: 100vw !important;
             height: 100vh !important;
             height: 100dvh !important;
             border: none !important;
+            background: #000 !important;
+            position: fixed;
+            top: 0;
+            left: 0;
             z-index: 999999 !important;
-            background-color: #000000 !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -60,164 +39,106 @@ html_code = """
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tabela Ölçer PRO</title>
     <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
+        * { margin:0; padding:0; box-sizing:border-box; }
+        
         html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
             height: 100vh;
             height: 100dvh;
+            width: 100vw;
             background: #000;
             overflow: hidden;
-            position: fixed;
-            top: 0;
-            left: 0;
-            color: #fff;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         .screen {
-            display: none;
-            width: 100%;
-            height: 100%;
             position: absolute;
-            top: 0;
-            left: 0;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: none;
         }
-        .screen.active {
-            display: flex;
-            flex-direction: column;
-        }
+        .screen.active { display: block; }
 
-        /* KAMERA EKRANI */
-        #camera-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
+        /* ====================== BUTONLAR ====================== */
         .camera-overlay {
             position: absolute;
-            top: 0;
+            bottom: 8%;
             left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            padding: 40px 20px;
-            padding-bottom: calc(40px + env(safe-area-inset-bottom));
-            pointer-events: none;
-            z-index: 200;
-        }
-
-        .shutter-container {
             width: 100%;
             display: flex;
             justify-content: center;
-            pointer-events: auto;
-            z-index: 210;
+            z-index: 9999 !important;
+            pointer-events: none;
         }
 
         .shutter-btn {
-            width: 84px;
-            height: 84px;
+            width: 90px;
+            height: 90px;
+            background: rgba(255,255,255,0.25);
+            border: 6px solid white;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.25);
-            border: 5px solid #ffffff;
             display: flex;
-            justify-content: center;
             align-items: center;
-            cursor: pointer;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
-            transition: all 0.1s ease;
-            z-index: 220;
-        }
-
-        .shutter-btn:active {
-            transform: scale(0.9);
+            justify-content: center;
+            box-shadow: 0 0 40px rgba(0,0,0,0.9);
+            pointer-events: auto;
+            z-index: 10000 !important;
         }
 
         .shutter-inner {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
+            width: 65px;
+            height: 65px;
             background: #ffd60a;
+            border-radius: 50%;
             display: flex;
-            justify-content: center;
             align-items: center;
-            font-weight: 800;
-            font-size: 15px;
-            color: #000;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: black;
         }
 
-        /* ÖLÇÜM EKRANI BUTONLARI */
-        .action-overlay {
+        /* Alt Butonlar */
+        .action-bar {
             position: absolute;
-            bottom: 30px;
-            bottom: calc(30px + env(safe-area-inset-bottom));
+            bottom: 8%;
+            left: 0;
             width: 100%;
             display: flex;
             justify-content: space-between;
-            padding: 0 30px;
+            padding: 0 40px;
+            z-index: 9999 !important;
             pointer-events: none;
-            z-index: 250;
         }
 
-        .btn-circle {
-            width: 60px;
-            height: 60px;
+        .action-btn {
+            width: 65px;
+            height: 65px;
+            background: rgba(30,30,30,0.95);
+            border: 2px solid rgba(255,255,255,0.3);
             border-radius: 50%;
-            background: rgba(30, 30, 30, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
             display: flex;
-            justify-content: center;
             align-items: center;
-            cursor: pointer;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
             pointer-events: auto;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
-            transition: all 0.2s ease;
-            font-size: 28px;
-            z-index: 260;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            z-index: 10000 !important;
         }
 
-        .btn-circle:active {
-            transform: scale(0.88);
-        }
-
-        .btn-circle.success {
+        .action-btn.save {
             background: #ffd60a;
-            color: #000;
+            color: black;
             border: none;
         }
 
-        /* Diğer stiller (kalibrasyon, pinler, badge vs.) aynı kalıyor */
-        #measure-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            background: #000;
-        }
-
-        .calibration-card, .pin, .measure-badge, #interactive-svg {
-            z-index: 100;
-        }
+        /* Diğer öğeler */
+        #camera-container { position: relative; width: 100%; height: 100%; }
+        video { width: 100%; height: 100%; object-fit: cover; }
     </style>
 </head>
 <body>
@@ -226,11 +147,11 @@ html_code = """
     <div id="camera-screen" class="screen active">
         <div id="camera-container">
             <video id="video" autoplay playsinline muted></video>
+            
+            <!-- ÇEK BUTONU -->
             <div class="camera-overlay">
-                <div class="shutter-container">
-                    <div class="shutter-btn" id="capture-btn">
-                        <div class="shutter-inner">ÇEK</div>
-                    </div>
+                <div class="shutter-btn" id="capture-btn">
+                    <div class="shutter-inner">ÇEK</div>
                 </div>
             </div>
         </div>
@@ -239,63 +160,55 @@ html_code = """
     <!-- ÖLÇÜM EKRANI -->
     <div id="measure-screen" class="screen">
         <div id="measure-container">
-            <!-- Kalibrasyon Sürgüsü -->
-            <div class="calibration-card">
-                <div class="calibration-title">
-                    <span>Mesafe Ayarı</span>
-                    <span id="calib-ratio-text" style="color:#fff; background:rgba(255,255,255,0.15); padding:2px 8px; border-radius:12px; font-size:11px;">x1.00</span>
-                </div>
-                <div class="slider-wrapper">
-                    <span style="font-size:28px; color:#ffd60a;">−</span>
-                    <input type="range" id="calibration-slider" min="100" max="600" value="300" class="modern-slider">
-                    <span style="font-size:24px; color:#ffd60a;">+</span>
-                </div>
+            <!-- Buraya kalibrasyon, canvas, pinler vs. gelecek -->
+            <div style="position:absolute; top:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.7); padding:10px 20px; border-radius:30px; z-index:100;">
+                Mesafe Ayarı
             </div>
 
-            <!-- Canvas ve Ölçüm Alanı -->
-            <div id="canvas-wrap">
-                <canvas id="source-canvas"></canvas>
-                <svg id="interactive-svg"></svg>
-                <!-- Pinler, çizgiler ve badge'ler buraya eklenecek (orijinal kodunuzdaki gibi) -->
-            </div>
-
-            <!-- Alt Butonlar -->
-            <div class="action-overlay">
-                <button class="btn-circle" id="back-to-cam" title="Geri Dön">←</button>
-                <button class="btn-circle success" id="save-btn" title="Kaydet">💾</button>
+            <!-- ALT BUTONLAR -->
+            <div class="action-bar">
+                <div class="action-btn" id="back-to-cam">←</div>
+                <div class="action-btn save" id="save-btn">💾</div>
             </div>
         </div>
     </div>
 
     <script>
-        // Script kısmınız (orijinal kodunuzdaki script) buraya gelecek.
-        // Aşağıda sadece kritik kısımları gösteriyorum, geri kalanını kendi kodunuzdan kopyalayın.
-        
         const video = document.getElementById('video');
         const captureBtn = document.getElementById('capture-btn');
-        const measureScreen = document.getElementById('measure-screen');
         const camScreen = document.getElementById('camera-screen');
+        const measureScreen = document.getElementById('measure-screen');
 
-        // Kamera başlatma
         async function startCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: { exact: "environment" } }
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment" } 
                 });
                 video.srcObject = stream;
-            } catch (e) {
+            } catch (err) {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
             }
         }
+
         startCamera();
 
-        // Diğer script fonksiyonlarınız (showMeasureScreen, updateUI, save-btn vs.) aynı kalabilir.
-        // Sadece bu yapıyı koruyun.
+        captureBtn.addEventListener('click', () => {
+            alert("Çek butonuna basıldı! (Test)");
+            // Buraya orijinal fotoğraf çekme kodunuzu ekleyebilirsiniz
+        });
+
+        document.getElementById('back-to-cam').addEventListener('click', () => {
+            measureScreen.classList.remove('active');
+            camScreen.classList.add('active');
+        });
+
+        document.getElementById('save-btn').addEventListener('click', () => {
+            alert("Kaydet butonuna basıldı!");
+        });
     </script>
 </body>
 </html>
 """
 
-# Render Et
-components.html(html_code, height=1450, scrolling=False)
+components.html(html_code, height=1600, scrolling=False)
