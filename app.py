@@ -292,6 +292,7 @@ html_code = """
             width: 100%;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 10px;
         }
         .modern-slider {
@@ -351,103 +352,6 @@ html_code = """
             color: #000;
             border: none;
         }
-
-        /* ------------------------------------------------ */
-        /* SAF CSS-TABANLI İKON STİLLERİ (ENGELKAS KORUMALI) */
-        /* ------------------------------------------------ */
-        .icon-minus {
-            width: 14px;
-            height: 3px;
-            background-color: #ffd60a;
-            border-radius: 2px;
-            display: block;
-        }
-
-        .icon-plus {
-            position: relative;
-            width: 14px;
-            height: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .icon-plus-line1 {
-            position: absolute;
-            width: 14px;
-            height: 3px;
-            background-color: #ffd60a;
-            border-radius: 2px;
-        }
-        .icon-plus-line2 {
-            position: absolute;
-            width: 3px;
-            height: 14px;
-            background-color: #ffd60a;
-            border-radius: 2px;
-        }
-
-        .icon-back {
-            position: relative;
-            width: 22px;
-            height: 22px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .icon-back-line {
-            position: absolute;
-            width: 16px;
-            height: 3px;
-            background-color: #ffffff;
-            border-radius: 2px;
-            left: 4px;
-        }
-        .icon-back-arrow {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            border-left: 3px solid #ffffff;
-            border-bottom: 3px solid #ffffff;
-            transform: rotate(45deg);
-            left: 2px;
-        }
-
-        .icon-save-container {
-            position: relative;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .icon-save-arrow-line {
-            position: absolute;
-            width: 3px;
-            height: 13px;
-            background-color: #000000;
-            border-radius: 2px;
-            top: 2px;
-        }
-        .icon-save-arrow-head {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            border-right: 3px solid #000000;
-            border-bottom: 3px solid #000000;
-            transform: rotate(45deg);
-            top: 5px;
-        }
-        .icon-save-tray {
-            position: absolute;
-            width: 20px;
-            height: 6px;
-            border-left: 3px solid #000000;
-            border-right: 3px solid #000000;
-            border-bottom: 3px solid #000000;
-            border-bottom-left-radius: 2px;
-            border-bottom-right-radius: 2px;
-            bottom: 2px;
-        }
     </style>
 </head>
 <body>
@@ -477,16 +381,13 @@ html_code = """
                     <span id="calib-ratio-text" style="color:#fff; font-weight:800; background:rgba(255,255,255,0.15); padding:1px 6px; border-radius:10px; font-size:10px;">x1.00</span>
                 </div>
                 <div class="slider-wrapper">
-                    <!-- SAF CSS EKSİ (MINUS) İKONU -->
-                    <div class="icon-minus"></div>
+                    <!-- EVRENSEL SİSTEM EKSİ (-) KARAKTERİ -->
+                    <span style="font-size: 24px; font-weight: 800; color: #ffd60a; line-height: 1; user-select: none;">−</span>
                     
                     <input type="range" id="calibration-slider" min="100" max="600" value="300" class="modern-slider">
                     
-                    <!-- SAF CSS ARTI (PLUS) İKONU -->
-                    <div class="icon-plus">
-                        <div class="icon-plus-line1"></div>
-                        <div class="icon-plus-line2"></div>
-                    </div>
+                    <!-- EVRENSEL SİSTEM ARTI (+) KARAKTERİ -->
+                    <span style="font-size: 20px; font-weight: 800; color: #ffd60a; line-height: 1; user-select: none;">+</span>
                 </div>
             </div>
 
@@ -518,20 +419,13 @@ html_code = """
             <div class="action-overlay">
                 <!-- GERİ DÖN BUTONU -->
                 <button class="btn-circle" id="back-to-cam" title="Geri Dön">
-                    <!-- SAF CSS GERİ DÖN OK İKONU -->
-                    <div class="icon-back">
-                        <div class="icon-back-arrow"></div>
-                        <div class="icon-back-line"></div>
-                    </div>
+                    <!-- SİSTEM TABANLI OK KARAKTERİ -->
+                    <span style="font-size: 30px; font-weight: bold; color: #ffffff; line-height: 1; transform: translateY(-2px); display: block;">←</span>
                 </button>
                 <!-- KAYDET BUTONU -->
                 <button class="btn-circle success" id="save-btn" title="Kaydet">
-                    <!-- SAF CSS KAYDET (DOWNLOAD) İKONU -->
-                    <div class="icon-save-container">
-                        <div class="icon-save-arrow-line"></div>
-                        <div class="icon-save-arrow-head"></div>
-                        <div class="icon-save-tray"></div>
-                    </div>
+                    <!-- SİSTEM TABANLI NATIVE KAYDET EMOCİSİ -->
+                    <span style="font-size: 26px; line-height: 1; display: block;">💾</span>
                 </button>
             </div>
         </div>
@@ -722,37 +616,49 @@ html_code = """
             const widthCm = Math.round(widthPx / scaleFactor);
             const heightCm = Math.round(heightPx / scaleFactor);
 
+            // GEOMETRİK MERKEZ NOKTASINI BULALIM
             const centerX = (tl.x + tr.x + br.x + bl.x) / 4;
             const centerY = (tl.y + tr.y + br.y + bl.y) / 4;
 
-            // Üst Kenar İçin İtme
+            // 1. ÜST KENAR ÖLÇÜM BALONU (Ortak merkezden dışarıya doğru itilen vektörle konumlandırma)
             const dxTop = tr.x - tl.x;
             const dyTop = tr.y - tl.y;
             const midTopX = (tl.x + tr.x) / 2;
             const midTopY = (tl.y + tr.y) / 2;
-            const dirTopX = midTopX - centerX;
-            const dirTopY = midTopY - centerY;
+            
+            // Merkezden üst kenara giden yön vektörünün birim uzunluğu
+            let dirTopX = midTopX - centerX;
+            let dirTopY = midTopY - centerY;
             const lenTopDir = Math.hypot(dirTopX, dirTopY) || 1;
+            
+            // Ölçüm balonunu çizgiden her zaman dışarıya (30px) itecek şekilde öteleme uyguluyoruz
             const badgeTopX = midTopX + (dirTopX / lenTopDir) * 30;
             const badgeTopY = midTopY + (dirTopY / lenTopDir) * 30;
+            
             const angleTopRad = Math.atan2(dyTop, dxTop);
             const readableAngleTopRad = getReadableAngle(angleTopRad);
             const degTop = readableAngleTopRad * 180 / Math.PI;
 
-            // Sağ Kenar İçin İtme
+            // 2. SAĞ KENAR ÖLÇÜM BALONU (Ortak merkezden dışarıya doğru itilen vektörle konumlandırma)
             const dxRight = br.x - tr.x;
             const dyRight = br.y - tr.y;
             const midRightX = (tr.x + br.x) / 2;
             const midRightY = (tr.y + br.y) / 2;
-            const dirRightX = midRightX - centerX;
-            const dirRightY = midRightY - centerY;
+            
+            // Merkezden sağ kenara giden yön vektörünün birim uzunluğu
+            let dirRightX = midRightX - centerX;
+            let dirRightY = midRightY - centerY;
             const lenRightDir = Math.hypot(dirRightX, dirRightY) || 1;
+            
+            // Ölçüm balonunu çizgiden her zaman dışarıya (30px) itecek şekilde öteleme uyguluyoruz
             const badgeRightX = midRightX + (dirRightX / lenRightDir) * 30;
             const badgeRightY = midRightY + (dirRightY / lenRightDir) * 30;
+            
             const angleRightRad = Math.atan2(dyRight, dxRight);
             const readableAngleRightRad = getReadableAngle(angleRightRad);
             const degRight = readableAngleRightRad * 180 / Math.PI;
 
+            // HTML Elementlerinin koordinat ve rotasyonlarını güncelliyoruz
             badgeTop.style.left = `${badgeTopX}px`;
             badgeTop.style.top = `${badgeTopY}px`;
             badgeTop.innerText = `${widthCm} cm`;
@@ -901,6 +807,7 @@ html_code = """
             const centerX = (tl.x + tr.x + br.x + bl.x) / 4;
             const centerY = (tl.y + tr.y + br.y + bl.y) / 4;
 
+            // Fotoğraf üzerinde de tam dışarı öteleme hesaplamaları
             const dxTop = tr.x - tl.x;
             const dyTop = tr.y - tl.y;
             const midTopX = (tl.x + tr.x) / 2;
@@ -941,7 +848,7 @@ html_code = """
                     return;
                 }
             } catch (err) {
-                // iOS paylaşım arayüzü başarısız olursa normal indirmeye düşür
+                // Hata durumunda varsayılan indirmeye düş
             }
 
             const downloadLink = document.createElement('a');
